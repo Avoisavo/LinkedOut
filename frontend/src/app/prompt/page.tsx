@@ -1,221 +1,298 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useRef, useEffect, useMemo, useState } from 'react';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { OrbitControls, Environment } from '@react-three/drei';
+import { Suspense } from 'react';
+import * as THREE from 'three';
+import ChatBox from '../../../component/ChatBox';
+import WorkflowBuilder from '../../../component/WorkflowBuilder';
+import TemplateSidebar from '../../../component/TemplateSidebar';
 
-interface Message {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: Date;
-}
-
-export default function ChatPage() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      role: 'assistant',
-      content: 'Hello! I\'m your AI assistant. How can I help you today?',
-      timestamp: new Date(),
-    },
-  ]);
-  const [input, setInput] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  const handleSend = async () => {
-    if (!input.trim()) return;
-
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      role: 'user',
-      content: input,
-      timestamp: new Date(),
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
-    setInput('');
-    setIsTyping(true);
-
-    // Simulate AI response (replace with actual API call)
-    setTimeout(() => {
-      const aiMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: 'This is a simulated response. Connect your AI API to make this functional!',
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, aiMessage]);
-      setIsTyping(false);
-    }, 1000);
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
+// Floating dust particles component (same as landing page)
+function FloatingDust() {
+  const particlesRef = useRef<THREE.Points>(null);
+  const particleCount = 1000;
+  
+  const particles = useMemo(() => {
+    const positions = new Float32Array(particleCount * 3);
+    const velocities = new Float32Array(particleCount * 3);
+    
+    for (let i = 0; i < particleCount; i++) {
+      const i3 = i * 3;
+      positions[i3] = (Math.random() - 0.5) * 30;
+      positions[i3 + 1] = (Math.random() - 0.5) * 20;
+      positions[i3 + 2] = (Math.random() - 0.5) * 25;
+      
+      velocities[i3] = (Math.random() - 0.5) * 0.02;
+      velocities[i3 + 1] = (Math.random() - 0.5) * 0.015;
+      velocities[i3 + 2] = (Math.random() - 0.5) * 0.02;
     }
-  };
-
+    
+    return { positions, velocities };
+  }, []);
+  
+  useFrame((state) => {
+    if (!particlesRef.current) return;
+    
+    const positions = particlesRef.current.geometry.attributes.position.array as Float32Array;
+    const time = state.clock.getElapsedTime();
+    
+    for (let i = 0; i < particleCount; i++) {
+      const i3 = i * 3;
+      
+      positions[i3] += particles.velocities[i3];
+      positions[i3 + 1] += particles.velocities[i3 + 1];
+      positions[i3 + 2] += particles.velocities[i3 + 2];
+      
+      positions[i3 + 1] += Math.sin(time + i * 0.1) * 0.002;
+      
+      if (positions[i3] > 15) positions[i3] = -15;
+      if (positions[i3] < -15) positions[i3] = 15;
+      if (positions[i3 + 1] > 10) positions[i3 + 1] = -10;
+      if (positions[i3 + 1] < -10) positions[i3 + 1] = 10;
+      if (positions[i3 + 2] > 12) positions[i3 + 2] = -12;
+      if (positions[i3 + 2] < -12) positions[i3 + 2] = 12;
+    }
+    
+    particlesRef.current.geometry.attributes.position.needsUpdate = true;
+  });
+  
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4">
-      <div className="w-full max-w-4xl h-[90vh] flex flex-col bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden border border-gray-200 dark:border-gray-700">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-700 dark:to-purple-700 px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center">
-              <svg
-                className="w-6 h-6 text-indigo-600 dark:text-indigo-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-                />
-              </svg>
-            </div>
-            <div>
-              <h1 className="text-white font-semibold text-lg">AI Assistant</h1>
-              <p className="text-indigo-100 text-xs">Online</p>
-            </div>
-          </div>
-          <button className="text-white hover:bg-white/10 rounded-lg p-2 transition-colors">
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
-              />
-            </svg>
-          </button>
-        </div>
-
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50 dark:bg-gray-900">
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex ${
-                message.role === 'user' ? 'justify-end' : 'justify-start'
-              } animate-fade-in`}
-            >
-              <div
-                className={`max-w-[70%] rounded-2xl px-4 py-3 ${
-                  message.role === 'user'
-                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-br-sm'
-                    : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-bl-sm shadow-md border border-gray-200 dark:border-gray-700'
-                }`}
-              >
-                <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
-                  {message.content}
-                </p>
-                <p
-                  className={`text-xs mt-2 ${
-                    message.role === 'user'
-                      ? 'text-indigo-100'
-                      : 'text-gray-500 dark:text-gray-400'
-                  }`}
-                >
-                  {message.timestamp.toLocaleTimeString([], {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
-                </p>
-              </div>
-            </div>
-          ))}
-
-          {isTyping && (
-            <div className="flex justify-start animate-fade-in">
-              <div className="bg-white dark:bg-gray-800 rounded-2xl rounded-bl-sm px-4 py-3 shadow-md border border-gray-200 dark:border-gray-700">
-                <div className="flex space-x-2">
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100"></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200"></div>
-                </div>
-              </div>
-            </div>
-          )}
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* Input */}
-        <div className="p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
-          <div className="flex gap-3 items-end">
-            <div className="flex-1 relative">
-              <textarea
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Type your message..."
-                rows={1}
-                className="w-full px-4 py-3 pr-12 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none text-gray-800 dark:text-gray-200 placeholder-gray-500 dark:placeholder-gray-400 max-h-32"
-                style={{ minHeight: '48px' }}
-              />
-              <button
-                className="absolute right-2 bottom-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors p-1"
-                title="Attach file"
-              >
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
-                  />
-                </svg>
-              </button>
-            </div>
-            <button
-              onClick={handleSend}
-              disabled={!input.trim()}
-              className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-3 rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-medium shadow-lg hover:shadow-xl"
-            >
-              <span>Send</span>
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
-                />
-              </svg>
-            </button>
-          </div>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
-            Press Enter to send, Shift+Enter for new line
-          </p>
-        </div>
-      </div>
-    </div>
+    <points ref={particlesRef}>
+      <bufferGeometry>
+        <bufferAttribute
+          attach="attributes-position"
+          count={particleCount}
+          array={particles.positions}
+          itemSize={3}
+          args={[particles.positions, 3]}
+        />
+      </bufferGeometry>
+      <pointsMaterial
+        size={0.03}
+        color="#8ab4f8"
+        transparent
+        opacity={0.5}
+        sizeAttenuation
+        blending={THREE.AdditiveBlending}
+        depthWrite={false}
+      />
+    </points>
   );
 }
 
+// 3D Background Scene
+function BackgroundScene() {
+  return (
+    <>
+      <ambientLight intensity={0.1} />
+      <pointLight position={[0, 0, -8]} intensity={30} color="#4a9fff" distance={20} />
+      <pointLight position={[5, 3, -6]} intensity={15} color="#6ab7ff" distance={15} />
+      <pointLight position={[-5, 3, -6]} intensity={15} color="#6ab7ff" distance={15} />
+      <FloatingDust />
+      <Environment preset="night" />
+      <color attach="background" args={['#000000']} />
+      <OrbitControls
+        enableZoom={false}
+        enablePan={false}
+        autoRotate
+        autoRotateSpeed={0.3}
+      />
+    </>
+  );
+}
 
+// Interactive cursor component
+function InteractiveCursor() {
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [trail, setTrail] = useState<Array<{ x: number; y: number; id: number }>>([]);
+  const trailIdRef = useRef(0);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      setMousePosition({ x: e.clientX, y: e.clientY });
+      
+      const newTrailPoint = {
+        x: e.clientX,
+        y: e.clientY,
+        id: trailIdRef.current++
+      };
+      
+      setTrail(prev => [...prev, newTrailPoint].slice(-15));
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTrail(prev => prev.slice(1));
+    }, 50);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <>
+      <div
+        className="fixed pointer-events-none z-50 mix-blend-screen"
+        style={{
+          left: mousePosition.x,
+          top: mousePosition.y,
+          transform: 'translate(-50%, -50%)',
+          width: '40px',
+          height: '40px',
+          borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, rgba(180, 200, 220, 0.1) 40%, transparent 70%)',
+          transition: 'width 0.2s, height 0.2s',
+        }}
+      />
+
+      {trail.map((point, index) => {
+        const opacity = (index + 1) / trail.length;
+        const scale = (index + 1) / trail.length;
+        return (
+          <div
+            key={point.id}
+            className="fixed pointer-events-none z-40"
+            style={{
+              left: point.x,
+              top: point.y,
+              transform: 'translate(-50%, -50%)',
+              width: `${8 * scale}px`,
+              height: `${8 * scale}px`,
+              borderRadius: '50%',
+              background: `radial-gradient(circle, rgba(255, 255, 255, ${0.6 * opacity}) 0%, rgba(180, 200, 220, ${0.3 * opacity}) 50%, transparent 100%)`,
+              opacity: opacity * 0.7,
+              mixBlendMode: 'screen',
+            }}
+          />
+        );
+      })}
+
+      <div
+        className="fixed pointer-events-none z-50"
+        style={{
+          left: mousePosition.x,
+          top: mousePosition.y,
+          transform: 'translate(-50%, -50%)',
+          width: '30px',
+          height: '30px',
+          borderRadius: '50%',
+          border: '1px solid rgba(255, 255, 255, 0.3)',
+          transition: 'width 0.15s, height 0.15s, opacity 0.15s',
+        }}
+      />
+    </>
+  );
+}
+
+export default function ChatPage() {
+  const [showWorkflow, setShowWorkflow] = useState(false);
+  const [userPrompt, setUserPrompt] = useState('');
+
+  const handleSendMessage = (message: string) => {
+    // Handle the message here (e.g., send to API, update state, etc.)
+    console.log('Message sent:', message);
+    setUserPrompt(message);
+    setShowWorkflow(true);
+  };
+
+  return (
+    <div className="relative min-h-screen bg-black overflow-hidden" style={{ cursor: 'none' }}>
+      {/* 3D Background */}
+      <div className="absolute inset-0 z-0">
+        <Canvas
+          camera={{ position: [0, 0, 10], fov: 60 }}
+          gl={{ 
+            antialias: true,
+            toneMapping: THREE.ACESFilmicToneMapping,
+            toneMappingExposure: 1.0
+          }}
+        >
+          <Suspense fallback={null}>
+            <BackgroundScene />
+          </Suspense>
+        </Canvas>
+      </div>
+
+      {/* Interactive Cursor */}
+      <InteractiveCursor />
+
+      {/* Chat Interface */}
+      {!showWorkflow ? (
+        <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
+          <ChatBox 
+            onSend={handleSendMessage}
+            walletAddress="0x32322423..."
+          />
+        </div>
+      ) : (
+        <div className="relative z-10 min-h-screen flex flex-col p-4 animate-fade-in">
+          {/* Workflow Builder View */}
+          <div className="flex-1 flex gap-4">
+            <WorkflowBuilder prompt={userPrompt} />
+            <TemplateSidebar />
+          </div>
+
+          {/* Chatbox at Bottom */}
+          <div 
+            className="w-full max-w-4xl mx-auto mt-4 animate-slide-up"
+            style={{
+              animationDelay: '0.3s',
+              animationFillMode: 'both',
+            }}
+          >
+            <ChatBox 
+              onSend={handleSendMessage}
+              walletAddress="0x32322423..."
+              compact={true}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Fonts */}
+      <style jsx>{`
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600&display=swap');
+        
+        @keyframes fade-in {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+
+        @keyframes slide-up {
+          from {
+            opacity: 0;
+            transform: translateY(40px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        .animate-fade-in {
+          animation: fade-in 0.6s ease-out;
+        }
+
+        .animate-slide-up {
+          animation: slide-up 0.7s ease-out;
+        }
+        
+        .delay-100 {
+          animation-delay: 0.1s;
+        }
+        
+        .delay-200 {
+          animation-delay: 0.2s;
+        }
+      `}</style>
+    </div>
+  );
+}
