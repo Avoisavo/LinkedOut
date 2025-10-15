@@ -110,7 +110,7 @@ function CenterSphere({ isAnimating, animationFrame }: { isAnimating?: boolean, 
 }
 
 // Floating dust particles component
-function FloatingDust() {
+function FloatingDust({ isAnimating, animationFrame }: { isAnimating?: boolean, animationFrame?: number }) {
   const particlesRef = useRef<THREE.Points>(null);
   const particleCount = 1500;
   
@@ -145,13 +145,18 @@ function FloatingDust() {
     for (let i = 0; i < particleCount; i++) {
       const i3 = i * 3;
       
-      // Slow drift movement
-      positions[i3] += particles.velocities[i3];
-      positions[i3 + 1] += particles.velocities[i3 + 1];
-      positions[i3 + 2] += particles.velocities[i3 + 2];
-      
-      // Add subtle wave motion
-      positions[i3 + 1] += Math.sin(time + i * 0.1) * 0.002;
+      // If animating and after frame 60, particles move upward
+      if (isAnimating && animationFrame && animationFrame > 60) {
+        positions[i3 + 1] += 0.15; // Move up
+      } else {
+        // Normal slow drift movement
+        positions[i3] += particles.velocities[i3];
+        positions[i3 + 1] += particles.velocities[i3 + 1];
+        positions[i3 + 2] += particles.velocities[i3 + 2];
+        
+        // Add subtle wave motion
+        positions[i3 + 1] += Math.sin(time + i * 0.1) * 0.002;
+      }
       
       // Wrap particles around when they go too far
       if (positions[i3] > 15) positions[i3] = -15;
@@ -252,7 +257,7 @@ function Scene({ isAnimating, animationFrame }: { isAnimating?: boolean, animati
       />
 
       {/* Floating dust particles */}
-      <FloatingDust />
+      <FloatingDust isAnimating={isAnimating} animationFrame={animationFrame} />
 
       {/* Environment for reflections */}
       <Environment preset="night" />
@@ -384,10 +389,10 @@ export default function LandingPage() {
 
   const handleStartClick = () => {
     setIsAnimating(true);
-    // Navigate after 3 seconds to allow for full animation
+    // Navigate after 2 seconds to allow for full animation
     setTimeout(() => {
       router.push('/prompt');
-    }, 3000);
+    }, 2000);
   };
 
   return (
