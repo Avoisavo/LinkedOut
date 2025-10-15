@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 interface WorkflowNode {
   id: string;
@@ -14,6 +15,7 @@ interface WorkflowBuilderProps {
 }
 
 export default function WorkflowBuilder({ prompt }: WorkflowBuilderProps) {
+  const router = useRouter();
   const [nodes] = useState<WorkflowNode[]>([
     { id: '1', type: 'action', label: 'Bridge USDC', position: { x: 80, y: 80 } },
     { id: '2', type: 'action', label: 'Ethereum → Polygon', position: { x: 80, y: 160 } },
@@ -168,6 +170,7 @@ export default function WorkflowBuilder({ prompt }: WorkflowBuilderProps) {
           }}
         >
           <button
+            onClick={() => router.push('/workflow')}
             className="px-3 py-1.5 rounded-lg flex items-center gap-1.5 font-semibold transition-all hover:scale-105"
             style={{
               fontFamily: "'Orbitron', sans-serif",

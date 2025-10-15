@@ -5,6 +5,7 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Environment } from '@react-three/drei';
 import { Suspense } from 'react';
 import * as THREE from 'three';
+import Header from '../../../component/Header';
 import ChatBox from '../../../component/ChatBox';
 import WorkflowBuilder from '../../../component/WorkflowBuilder';
 import TemplateSidebar from '../../../component/TemplateSidebar';
@@ -217,19 +218,22 @@ export default function ChatPage() {
         </Canvas>
       </div>
 
+      {/* Header */}
+      <Header showBackButton={showWorkflow} />
+
       {/* Interactive Cursor */}
       <InteractiveCursor />
 
       {/* Chat Interface */}
       {!showWorkflow ? (
-        <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
+        <div className="relative z-10 flex items-center justify-center p-4" style={{ minHeight: 'calc(100vh - 64px)', paddingTop: '64px' }}>
           <ChatBox 
             onSend={handleSendMessage}
             walletAddress="0x32322423..."
           />
         </div>
       ) : (
-        <div className="relative z-10 min-h-screen flex flex-col p-4 animate-fade-in">
+        <div className="relative z-10 flex flex-col p-4 animate-fade-in" style={{ minHeight: 'calc(100vh - 64px)', paddingTop: '64px' }}>
           {/* Workflow Builder View */}
           <div className="flex-1 flex gap-4">
             <WorkflowBuilder prompt={userPrompt} />

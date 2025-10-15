@@ -3,12 +3,32 @@
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Environment, Sphere, MeshTransmissionMaterial } from '@react-three/drei';
 import { Suspense, useRef, useMemo, useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import * as THREE from 'three';
 
 // Crystal/Rock formation component
-function Rock({ position, rotation, scale = 1 }: { position: [number, number, number], rotation: [number, number, number], scale?: number }) {
+function Rock({ position, rotation, scale = 1, isAnimating, direction }: { 
+  position: [number, number, number], 
+  rotation: [number, number, number], 
+  scale?: number,
+  isAnimating?: boolean,
+  direction?: 'left' | 'right'
+}) {
+  const groupRef = useRef<THREE.Group>(null);
+  
+  useFrame(() => {
+    if (isAnimating && groupRef.current) {
+      const speed = 0.15;
+      if (direction === 'left') {
+        groupRef.current.position.x -= speed;
+      } else if (direction === 'right') {
+        groupRef.current.position.x += speed;
+      }
+    }
+  });
+  
   return (
-    <group position={position} rotation={rotation} scale={scale}>
+    <group ref={groupRef} position={position} rotation={rotation} scale={scale}>
       {/* Main crystal structure */}
       <mesh castShadow>
         <coneGeometry args={[1.5, 4, 6]} />
@@ -55,9 +75,18 @@ function Rock({ position, rotation, scale = 1 }: { position: [number, number, nu
 }
 
 // Central glass/metallic sphere
-function CenterSphere() {
+function CenterSphere({ isAnimating, animationFrame }: { isAnimating?: boolean, animationFrame?: number }) {
+  const sphereRef = useRef<THREE.Mesh>(null);
+  
+  useFrame(() => {
+    if (isAnimating && sphereRef.current && animationFrame && animationFrame > 60) {
+      // Ball starts dropping after 1 second (60 frames at 60fps)
+      sphereRef.current.position.y -= 0.12;
+    }
+  });
+  
   return (
-    <Sphere args={[1.6, 64, 64]} castShadow>
+    <Sphere ref={sphereRef} args={[1.6, 64, 64]} castShadow>
       <MeshTransmissionMaterial
         backside
         samples={16}
@@ -160,10 +189,25 @@ function FloatingDust() {
   );
 }
 
+// Camera controller component
+function CameraController({ isAnimating, animationFrame }: { isAnimating?: boolean, animationFrame?: number }) {
+  useFrame(({ camera }) => {
+    if (isAnimating && animationFrame && animationFrame > 60) {
+      // Camera follows the ball down after 1 second
+      camera.position.y -= 0.12;
+    }
+  });
+  
+  return null;
+}
+
 // Scene component with all 3D elements
-function Scene() {
+function Scene({ isAnimating, animationFrame }: { isAnimating?: boolean, animationFrame?: number }) {
   return (
     <>
+      {/* Camera controller */}
+      <CameraController isAnimating={isAnimating} animationFrame={animationFrame} />
+      
       {/* Ambient light for base illumination */}
       <ambientLight intensity={0.1} />
       
@@ -187,13 +231,15 @@ function Scene() {
       />
 
       {/* Central sphere */}
-      <CenterSphere />
+      <CenterSphere isAnimating={isAnimating} animationFrame={animationFrame} />
 
       {/* Left rock formation */}
       <Rock 
         position={[-7, 0, 2]} 
         rotation={[0, 0.3, 0]}
         scale={3.8}
+        isAnimating={isAnimating}
+        direction="left"
       />
 
       {/* Right rock formation */}
@@ -201,6 +247,8 @@ function Scene() {
         position={[7, 0, 2]} 
         rotation={[0, -0.3, 0]}
         scale={3.8}
+        isAnimating={isAnimating}
+        direction="right"
       />
 
       {/* Floating dust particles */}
@@ -314,8 +362,34 @@ function InteractiveCursor() {
   );
 }
 
+// Animation frame tracker component
+function AnimationFrameTracker({ isAnimating, onFrameUpdate }: { isAnimating: boolean, onFrameUpdate: (frame: number) => void }) {
+  const frameRef = useRef(0);
+  
+  useFrame(() => {
+    if (isAnimating) {
+      frameRef.current += 1;
+      onFrameUpdate(frameRef.current);
+    }
+  });
+  
+  return null;
+}
+
 // Main page component
 export default function LandingPage() {
+  const router = useRouter();
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [animationFrame, setAnimationFrame] = useState(0);
+
+  const handleStartClick = () => {
+    setIsAnimating(true);
+    // Navigate after 3 seconds to allow for full animation
+    setTimeout(() => {
+      router.push('/prompt');
+    }, 3000);
+  };
+
   return (
     <div className="relative w-full h-screen bg-black overflow-hidden" style={{ cursor: 'none' }}>
       {/* 3D Canvas */}
@@ -329,12 +403,18 @@ export default function LandingPage() {
         }}
       >
         <Suspense fallback={null}>
-          <Scene />
+          <AnimationFrameTracker isAnimating={isAnimating} onFrameUpdate={setAnimationFrame} />
+          <Scene isAnimating={isAnimating} animationFrame={animationFrame} />
         </Suspense>
       </Canvas>
 
       {/* Futuristic Title */}
-      <div className="absolute top-[20%] left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+      <div 
+        className="absolute top-[20%] left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none transition-opacity duration-500"
+        style={{
+          opacity: isAnimating ? 0 : 1
+        }}
+      >
         <h1 
           className="text-5xl font-bold tracking-[0.3em] text-center mb-4"
           style={{
@@ -366,8 +446,15 @@ export default function LandingPage() {
       </div>
 
       {/* Start Button */}
-      <div className="absolute bottom-[18%] left-1/2 -translate-x-1/2 pointer-events-auto">
+      <div 
+        className="absolute bottom-[18%] left-1/2 -translate-x-1/2 pointer-events-auto transition-opacity duration-500"
+        style={{
+          opacity: isAnimating ? 0 : 1,
+          pointerEvents: isAnimating ? 'none' : 'auto'
+        }}
+      >
         <button
+          onClick={handleStartClick}
           className="px-10 py-4 text-lg font-semibold tracking-widest uppercase transition-all duration-300"
           style={{
             fontFamily: "'Orbitron', sans-serif",
