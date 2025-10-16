@@ -8,6 +8,7 @@ interface NodeType {
   description: string;
   icon: string;
   category: string;
+  subNodes?: NodeType[];
 }
 
 const nodeTypes: NodeType[] = [
@@ -37,7 +38,37 @@ const nodeTypes: NodeType[] = [
     title: 'Flow',
     description: 'Branch, merge or loop the flow, etc.',
     icon: '🔀',
-    category: 'Flow'
+    category: 'Flow',
+    subNodes: [
+      {
+        id: 'filter',
+        title: 'Filter',
+        description: 'Remove items matching a condition',
+        icon: '🔽',
+        category: 'Flow'
+      },
+      {
+        id: 'if',
+        title: 'If',
+        description: 'Route items to different branches (true/false)',
+        icon: '⇄',
+        category: 'Flow'
+      },
+      {
+        id: 'loop',
+        title: 'Loop Over Items (Split in Batches)',
+        description: 'Split data into batches and iterate over each batch',
+        icon: '🔄',
+        category: 'Flow'
+      },
+      {
+        id: 'merge',
+        title: 'Merge',
+        description: 'Merges data of multiple streams once data from both is available',
+        icon: '⋈',
+        category: 'Flow'
+      }
+    ]
   },
   {
     id: 'core',
@@ -70,11 +101,22 @@ interface NodePanelProps {
 
 export default function NodePanel({ isOpen, onClose, onAddNode }: NodePanelProps) {
   const [searchQuery, setSearchQuery] = useState('');
+  const [expandedNode, setExpandedNode] = useState<string | null>(null);
 
   const filteredNodes = nodeTypes.filter(node =>
     node.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     node.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const handleNodeClick = (node: NodeType) => {
+    if (node.subNodes && node.subNodes.length > 0) {
+      // Toggle expansion for nodes with sub-nodes
+      setExpandedNode(expandedNode === node.id ? null : node.id);
+    } else {
+      // Add node directly if it has no sub-nodes
+      onAddNode(node);
+    }
+  };
 
   return (
     <>
@@ -152,60 +194,142 @@ export default function NodePanel({ isOpen, onClose, onAddNode }: NodePanelProps
 
           {/* Node List */}
           <div className="flex-1 overflow-y-auto p-4 space-y-2">
-            {filteredNodes.map((node) => (
-              <div
-                key={node.id}
-                onClick={() => onAddNode(node)}
-                className="group p-4 rounded-lg cursor-pointer transition-all hover:scale-[1.02]"
-                style={{
-                  background: 'linear-gradient(135deg, rgba(40, 40, 50, 0.5), rgba(30, 30, 40, 0.7))',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
-                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
-                }}
+            {/* Back button when viewing sub-nodes */}
+            {expandedNode && (
+              <button
+                onClick={() => setExpandedNode(null)}
+                className="flex items-center gap-2 p-3 mb-2 text-gray-300 hover:text-white transition-colors"
               >
-                <div className="flex items-start gap-3">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                <span className="text-sm font-medium">Back</span>
+              </button>
+            )}
+
+            {/* Category header when viewing sub-nodes */}
+            {expandedNode && (
+              <div className="px-2 py-3 mb-2">
+                <h3 className="text-sm font-semibold text-gray-300">Popular</h3>
+              </div>
+            )}
+
+            {/* Show sub-nodes if a node is expanded */}
+            {expandedNode ? (
+              (() => {
+                const parentNode = filteredNodes.find(n => n.id === expandedNode);
+                return parentNode?.subNodes?.map((subNode) => (
                   <div
-                    className="w-10 h-10 rounded-lg flex items-center justify-center text-xl flex-shrink-0"
+                    key={subNode.id}
+                    onClick={() => onAddNode(subNode)}
+                    className="group p-4 rounded-lg cursor-pointer transition-all hover:scale-[1.02]"
                     style={{
-                      background: 'linear-gradient(135deg, rgba(100, 150, 200, 0.3), rgba(80, 120, 180, 0.4))',
-                      border: '1px solid rgba(150, 180, 220, 0.3)',
+                      background: 'linear-gradient(135deg, rgba(40, 40, 50, 0.5), rgba(30, 30, 40, 0.7))',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
                     }}
                   >
-                    {node.icon}
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between mb-1">
-                      <h3
-                        className="font-semibold text-sm"
+                    <div className="flex items-start gap-3">
+                      <div
+                        className="w-10 h-10 rounded-lg flex items-center justify-center text-xl flex-shrink-0"
                         style={{
-                          color: '#e0e8f0',
+                          background: 'linear-gradient(135deg, rgba(100, 150, 200, 0.3), rgba(80, 120, 180, 0.4))',
+                          border: '1px solid rgba(150, 180, 220, 0.3)',
+                        }}
+                      >
+                        {subNode.icon}
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between mb-1">
+                          <h3
+                            className="font-semibold text-sm"
+                            style={{
+                              color: '#e0e8f0',
+                              fontFamily: "'Inter', sans-serif",
+                            }}
+                          >
+                            {subNode.title}
+                          </h3>
+                          <svg
+                            className="w-4 h-4 text-gray-500 group-hover:text-white transition-colors"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </div>
+                        <p
+                          className="text-xs"
+                          style={{
+                            color: '#8a9fb5',
+                            fontFamily: "'Inter', sans-serif",
+                          }}
+                        >
+                          {subNode.description}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ));
+              })()
+            ) : (
+              /* Show main nodes */
+              filteredNodes.map((node) => (
+                <div
+                  key={node.id}
+                  onClick={() => handleNodeClick(node)}
+                  className="group p-4 rounded-lg cursor-pointer transition-all hover:scale-[1.02]"
+                  style={{
+                    background: 'linear-gradient(135deg, rgba(40, 40, 50, 0.5), rgba(30, 30, 40, 0.7))',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+                  }}
+                >
+                  <div className="flex items-start gap-3">
+                    <div
+                      className="w-10 h-10 rounded-lg flex items-center justify-center text-xl flex-shrink-0"
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(100, 150, 200, 0.3), rgba(80, 120, 180, 0.4))',
+                        border: '1px solid rgba(150, 180, 220, 0.3)',
+                      }}
+                    >
+                      {node.icon}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-1">
+                        <h3
+                          className="font-semibold text-sm"
+                          style={{
+                            color: '#e0e8f0',
+                            fontFamily: "'Inter', sans-serif",
+                          }}
+                        >
+                          {node.title}
+                        </h3>
+                        <svg
+                          className="w-4 h-4 text-gray-500 group-hover:text-white transition-colors"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </div>
+                      <p
+                        className="text-xs"
+                        style={{
+                          color: '#8a9fb5',
                           fontFamily: "'Inter', sans-serif",
                         }}
                       >
-                        {node.title}
-                      </h3>
-                      <svg
-                        className="w-4 h-4 text-gray-500 group-hover:text-white transition-colors"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
+                        {node.description}
+                      </p>
                     </div>
-                    <p
-                      className="text-xs"
-                      style={{
-                        color: '#8a9fb5',
-                        fontFamily: "'Inter', sans-serif",
-                      }}
-                    >
-                      {node.description}
-                    </p>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       </div>

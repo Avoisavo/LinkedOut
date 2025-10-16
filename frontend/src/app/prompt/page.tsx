@@ -6,8 +6,8 @@ import { OrbitControls, Environment } from '@react-three/drei';
 import { Suspense } from 'react';
 import * as THREE from 'three';
 import Header from '../../../component/Header';
-import ChatBox from '../../../component/ChatBox';
-import WorkflowBuilder from '../../../component/WorkflowBuilder';
+import ChatBox from './promptComponents/ChatBox';
+import WorkflowBuilder from './promptComponents/WorkflowBuilder';
 import TemplateSidebar from '../../../component/TemplateSidebar';
 
 // Floating dust particles component (same as landing page)
