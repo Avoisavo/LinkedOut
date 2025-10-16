@@ -7,6 +7,7 @@ interface NodeType {
   title: string;
   description: string;
   icon: string;
+  iconImage?: string; // Path to image file
   category: string;
   subNodes?: NodeType[];
 }
@@ -27,11 +28,53 @@ const nodeTypes: NodeType[] = [
     category: 'Action'
   },
   {
-    id: 'transformation',
-    title: 'Data transformation',
-    description: 'Manipulate, filter or convert data',
-    icon: '✏️',
-    category: 'Transform'
+    id: 'blockchain',
+    title: 'Blockchain',
+    description: 'Interact with blockchain networks and development tools',
+    icon: '⛓️',
+    category: 'Blockchain',
+    subNodes: [
+      {
+        id: 'hedera',
+        title: 'Hedera',
+        description: 'Interact with Hedera Hashgraph network',
+        icon: '🔷',
+        iconImage: '/hederalogo.png',
+        category: 'Blockchain'
+      },
+      {
+        id: 'avail',
+        title: 'Avail',
+        description: 'Connect to Avail data availability layer',
+        icon: '🔶',
+        iconImage: '/availlogo.png',
+        category: 'Blockchain'
+      },
+      {
+        id: 'blockscout',
+        title: 'Blockscout',
+        description: 'Explore and verify blockchain data',
+        icon: '🔍',
+        iconImage: '/blockscoutlogo.png',
+        category: 'Blockchain'
+      },
+      {
+        id: 'hardhat',
+        title: 'Hardhat',
+        description: 'Deploy and test smart contracts',
+        icon: '⚒️',
+        iconImage: '/hardhatlogo.png',
+        category: 'Blockchain'
+      },
+      {
+        id: 'envio',
+        title: 'Envio',
+        description: 'Index and query blockchain data',
+        icon: '📊',
+        iconImage: '/enviologo.png',
+        category: 'Blockchain'
+      }
+    ]
   },
   {
     id: 'flow',
@@ -69,13 +112,6 @@ const nodeTypes: NodeType[] = [
         category: 'Flow'
       }
     ]
-  },
-  {
-    id: 'core',
-    title: 'Core',
-    description: 'Run code, make HTTP requests, set webhooks, etc.',
-    icon: '⚙️',
-    category: 'Core'
   },
   {
     id: 'human',
@@ -231,13 +267,21 @@ export default function NodePanel({ isOpen, onClose, onAddNode }: NodePanelProps
                   >
                     <div className="flex items-start gap-3">
                       <div
-                        className="w-10 h-10 rounded-lg flex items-center justify-center text-xl flex-shrink-0"
+                        className="w-10 h-10 rounded-lg flex items-center justify-center text-xl flex-shrink-0 overflow-hidden"
                         style={{
                           background: 'linear-gradient(135deg, rgba(100, 150, 200, 0.3), rgba(80, 120, 180, 0.4))',
                           border: '1px solid rgba(150, 180, 220, 0.3)',
                         }}
                       >
-                        {subNode.icon}
+                        {subNode.iconImage ? (
+                          <img 
+                            src={subNode.iconImage} 
+                            alt={subNode.title}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          subNode.icon
+                        )}
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center justify-between mb-1">
@@ -288,13 +332,21 @@ export default function NodePanel({ isOpen, onClose, onAddNode }: NodePanelProps
                 >
                   <div className="flex items-start gap-3">
                     <div
-                      className="w-10 h-10 rounded-lg flex items-center justify-center text-xl flex-shrink-0"
+                      className="w-10 h-10 rounded-lg flex items-center justify-center text-xl flex-shrink-0 overflow-hidden"
                       style={{
                         background: 'linear-gradient(135deg, rgba(100, 150, 200, 0.3), rgba(80, 120, 180, 0.4))',
                         border: '1px solid rgba(150, 180, 220, 0.3)',
                       }}
                     >
-                      {node.icon}
+                      {node.iconImage ? (
+                        <img 
+                          src={node.iconImage} 
+                          alt={node.title}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        node.icon
+                      )}
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-1">

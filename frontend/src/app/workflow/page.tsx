@@ -12,6 +12,7 @@ import NodeTestPanel from './workflowComponents/NodeTestPanel';
 import AIAgentNode from './workflowComponents/AIAgentNode';
 import ModelSelectionModal from './workflowComponents/ModelSelectionModal';
 import IfNodeConfig from './workflowComponents/IfNodeConfig';
+import HederaNode from './hederaComponents/hederaNode';
 
 interface SubNode {
   id: string;
@@ -26,6 +27,7 @@ interface WorkflowNode {
   type: string;
   title: string;
   icon: string;
+  iconImage?: string;
   position: { x: number; y: number };
   inputs?: { [key: string]: string };
   subNodes?: SubNode[];
@@ -80,11 +82,29 @@ export default function WorkflowPage() {
       return;
     }
 
+    // Special handling for Hedera node
+    if (nodeType.id === 'hedera') {
+      const newNode: WorkflowNode = {
+        id: Date.now().toString(),
+        type: 'hedera-node',
+        title: 'Hedera',
+        icon: '🔷',
+        iconImage: '/hederalogo.png',
+        position: { x: 300, y: nodes.length * 150 + 100 },
+        inputs: {},
+        subNodes: []
+      };
+      setNodes([...nodes, newNode]);
+      setIsPanelOpen(false);
+      return;
+    }
+
     const newNode: WorkflowNode = {
       id: Date.now().toString(),
       type: nodeType.id,
       title: nodeType.title,
       icon: nodeType.icon,
+      iconImage: nodeType.iconImage,
       position: { x: 400, y: nodes.length * 150 + 100 },
       inputs: {}
     };
@@ -107,7 +127,20 @@ export default function WorkflowPage() {
         position: { x: 400, y: 100 },
         inputs: {}
       };
-      setNodes([newNode]);
+      
+      // Find existing trigger nodes
+      const existingTriggerIndex = nodes.findIndex(n => n.type === 'trigger');
+      
+      if (existingTriggerIndex >= 0) {
+        // Replace existing trigger
+        const updatedNodes = [...nodes];
+        updatedNodes[existingTriggerIndex] = newNode;
+        setNodes(updatedNodes);
+      } else {
+        // Add as first node if no trigger exists
+        setNodes([newNode, ...nodes]);
+      }
+      
       setShowTriggerPanel(false);
     }
   };
@@ -139,7 +172,20 @@ export default function WorkflowPage() {
           triggerType: pendingTrigger.triggerType
         }
       };
-      setNodes([newNode]);
+      
+      // Find existing trigger nodes
+      const existingTriggerIndex = nodes.findIndex(n => n.type === 'trigger');
+      
+      if (existingTriggerIndex >= 0) {
+        // Replace existing trigger
+        const updatedNodes = [...nodes];
+        updatedNodes[existingTriggerIndex] = newNode;
+        setNodes(updatedNodes);
+      } else {
+        // Add as first node if no trigger exists
+        setNodes([newNode, ...nodes]);
+      }
+      
       setPendingTrigger(null);
       setSavedCredential(null);
     }
@@ -399,6 +445,24 @@ export default function WorkflowPage() {
 
       {/* Workflow Canvas */}
       <div className="relative z-10" style={{ height: 'calc(100vh - 64px)' }}>
+        {/* Trigger Button - Top Right */}
+        <button
+          onClick={() => setShowTriggerPanel(true)}
+          className="absolute top-8 right-8 z-30 w-12 h-12 rounded-xl flex items-center justify-center transition-all hover:scale-110"
+          style={{
+            background: 'linear-gradient(135deg, rgba(255, 100, 100, 0.5), rgba(255, 80, 80, 0.6))',
+            border: '2px solid rgba(255, 120, 120, 0.4)',
+            color: '#ffffff',
+            boxShadow: '0 8px 24px rgba(255, 80, 80, 0.3)',
+            backdropFilter: 'blur(15px)',
+          }}
+          title="Manage Triggers"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+        </button>
+
         {/* Zoom Controls */}
         <div 
           className="absolute bottom-24 right-8 z-30 flex flex-col gap-2"
@@ -559,6 +623,16 @@ export default function WorkflowPage() {
             {nodes.map((node, index) => (
             node.type === 'ai-agent' ? (
               <AIAgentNode
+                key={node.id}
+                node={node}
+                onMouseDown={handleMouseDown}
+                onDelete={handleDeleteNode}
+                onAddSubNode={handleAddSubNode}
+                onRemoveSubNode={handleRemoveSubNode}
+                onConnectNext={handleConnectNext}
+              />
+            ) : node.type === 'hedera-node' ? (
+              <HederaNode
                 key={node.id}
                 node={node}
                 onMouseDown={handleMouseDown}
