@@ -1,0 +1,17 @@
+{
+  "name": "linkedout-api",
+  "version": "1.0.0",
+  "description": "LinkedOut Backend API for workflow management",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "better-sqlite3": "^9.2.2",
+    "dotenv": "^16.3.1"
+  }
+}
