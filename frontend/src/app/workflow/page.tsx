@@ -544,7 +544,14 @@ export default function WorkflowPage() {
       }}
     >
       {/* Header */}
-      <Header title="My Workflow" showBackButton={true} />
+      <Header
+        title="My Workflow"
+        showBackButton={true}
+        walletConnected={availExecutor.walletConnected}
+        walletAddress={availExecutor.walletAddress}
+        onConnectWallet={availExecutor.connectWallet}
+        onDisconnectWallet={availExecutor.disconnectWallet}
+      />
 
       {/* Workflow Canvas */}
       <div className="relative z-10" style={{ height: "calc(100vh - 64px)" }}>

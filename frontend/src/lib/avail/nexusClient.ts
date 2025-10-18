@@ -10,11 +10,17 @@ export interface ChainConfig {
 }
 
 // Supported chains configuration (Testnet)
+// Based on Nexus SDK supported chains
 export const SUPPORTED_CHAINS: Record<string, ChainConfig> = {
-  ethereum: {
-    chainId: 11155111, // Sepolia testnet
+  sepolia: {
+    chainId: 11155111, // Ethereum Sepolia testnet (SOURCE ONLY - not a bridge destination)
     name: "Ethereum Sepolia",
     rpcUrl: "https://rpc.sepolia.org",
+  },
+  base: {
+    chainId: 84532, // Base Sepolia testnet
+    name: "Base Sepolia",
+    rpcUrl: "https://sepolia.base.org",
   },
   polygon: {
     chainId: 80002, // Polygon Amoy testnet
@@ -31,10 +37,10 @@ export const SUPPORTED_CHAINS: Record<string, ChainConfig> = {
     name: "Optimism Sepolia",
     rpcUrl: "https://sepolia.optimism.io",
   },
-  base: {
-    chainId: 84532, // Base Sepolia testnet
-    name: "Base Sepolia",
-    rpcUrl: "https://sepolia.base.org",
+  monad: {
+    chainId: 10143, // Monad testnet
+    name: "Monad Testnet",
+    rpcUrl: "https://testnet.monad.xyz",
   },
 };
 
@@ -69,58 +75,64 @@ export async function initializeNexusClient(provider: any): Promise<NexusSDK> {
   try {
     initializationInProgress = true;
     console.log("🔧 Initializing Nexus SDK...");
+    console.log(
+      "📝 Note: MetaMask will prompt for signature to create Chain Abstraction account (one-time setup)"
+    );
 
     // Request wallet connection if not already connected
     await provider.request({ method: "eth_requestAccounts" });
-
-    // Switch to Sepolia testnet if not already on it
-    try {
-      await provider.request({
-        method: "wallet_switchEthereumChain",
-        params: [{ chainId: "0xaa36a7" }], // Sepolia chainId in hex (11155111)
-      });
-      console.log("✅ Switched to Sepolia testnet");
-    } catch (switchError: any) {
-      // If chain doesn't exist, add it
-      if (switchError.code === 4902) {
-        await provider.request({
-          method: "wallet_addEthereumChain",
-          params: [
-            {
-              chainId: "0xaa36a7",
-              chainName: "Sepolia Testnet",
-              nativeCurrency: {
-                name: "Sepolia ETH",
-                symbol: "ETH",
-                decimals: 18,
-              },
-              rpcUrls: ["https://rpc.sepolia.org"],
-              blockExplorerUrls: ["https://sepolia.etherscan.io"],
-            },
-          ],
-        });
-        console.log("✅ Added and switched to Sepolia testnet");
-      } else {
-        console.warn("Could not switch to Sepolia:", switchError);
-      }
-    }
+    console.log("✅ Wallet accounts accessible");
 
     // Create Nexus SDK instance
+    // NOTE: SDK will handle network switching automatically when bridging
+    // DO NOT manually switch networks here - it causes conflicts
     const client = new NexusSDK({
       network: "testnet", // Use testnet for safe testing
       debug: true,
     });
 
     // Initialize with the wallet provider
-    console.log("🔗 Connecting to wallet provider...");
+    // This will prompt MetaMask for signature to create CA account
+    console.log("🔗 Initializing Nexus SDK with wallet provider...");
+    console.log(
+      "⚠️ IMPORTANT: Approve the MetaMask signature request to create your Chain Abstraction account"
+    );
     await client.initialize(provider);
+
+    // Set up hooks for allowances and intents (required by SDK)
+    client.setOnAllowanceHook(async (data: any) => {
+      console.log("📋 Allowance required:", data);
+      // Auto-approve with max allowance for better UX
+      if (data.allow) {
+        console.log("✅ Auto-approving allowances with max values...");
+        data.allow(data.sources.map(() => "max"));
+      }
+    });
+
+    client.setOnIntentHook((data: any) => {
+      console.log("📋 Intent data:", data);
+      // Auto-approve intent for better UX
+      if (data.allow) {
+        console.log("✅ Auto-approving intent...");
+        data.allow();
+      }
+    });
 
     nexusClientInstance = client;
 
     console.log("✅ Nexus SDK initialized successfully");
+    console.log(
+      "ℹ️ SDK will auto-handle network switching during transactions"
+    );
+    console.log(
+      "ℹ️ Allowances and intents will auto-approve for smoother experience"
+    );
     return client;
   } catch (error) {
     console.error("❌ Failed to initialize Nexus SDK:", error);
+    console.error(
+      "💡 If you rejected the signature, please try again and approve it"
+    );
     nexusClientInstance = null;
     throw error;
   } finally {

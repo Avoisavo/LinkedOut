@@ -171,6 +171,20 @@ export async function executeBridge(
     const sourceChainConfig = getChainConfig(params.sourceChain);
     const targetChainConfig = getChainConfig(params.targetChain);
 
+    // Validate: Cannot bridge to same chain
+    if (sourceChainConfig.chainId === targetChainConfig.chainId) {
+      throw new Error(
+        `Cannot bridge from ${sourceChainConfig.name} to itself! Please select a different destination chain.`
+      );
+    }
+
+    // Validate: Sepolia cannot be a destination (only source)
+    if (targetChainConfig.chainId === 11155111) {
+      throw new Error(
+        `Ethereum Sepolia cannot be a bridge destination. Bridge FROM Sepolia TO other chains (Base, Polygon, Arbitrum, Optimism).`
+      );
+    }
+
     console.log("🌉 Initiating bridge transaction:");
     console.log(
       "  • From:",
@@ -192,12 +206,9 @@ export async function executeBridge(
       );
     }
 
-    // Ensure target network is added to MetaMask
-    await ensureNetworkAdded(targetChainConfig);
-
-    console.log(
-      "📝 Preparing bridge transaction (MetaMask will prompt for signature)..."
-    );
+    console.log("📝 Preparing bridge transaction...");
+    console.log("⚠️ SDK will handle network switching automatically");
+    console.log("⚠️ Cross-chain bridges take 5-15 minutes to complete");
 
     // Use Nexus SDK to execute the bridge
     // Note: SDK auto-detects source chain from connected wallet

@@ -39,6 +39,14 @@ export default function AvailBridgeNode({
   const [isExpanded, setIsExpanded] = useState(false);
   const supportedChains = getSupportedChainNames();
 
+  // Valid source chains (where you can bridge FROM)
+  const sourceChains = ["sepolia"]; // Ethereum Sepolia is the main testnet source
+
+  // Valid destination chains (where you can bridge TO)
+  const destinationChains = supportedChains.filter(
+    (chain) => chain !== "sepolia"
+  );
+
   const handleInputChange = (field: string, value: string) => {
     onUpdateInputs(node.id, {
       ...node.inputs,
@@ -160,7 +168,7 @@ export default function AvailBridgeNode({
                 className="text-xs font-medium"
                 style={{ color: "#8a9fb5" }}
               >
-                Source Chain
+                Source Chain (Where you have tokens)
               </label>
               <select
                 value={node.inputs?.sourceChain || ""}
@@ -174,13 +182,16 @@ export default function AvailBridgeNode({
                   color: "#e0e8f0",
                 }}
               >
-                <option value="">Select chain...</option>
-                {supportedChains.map((chain) => (
+                <option value="">Select source chain...</option>
+                {sourceChains.map((chain) => (
                   <option key={chain} value={chain}>
-                    {chain.charAt(0).toUpperCase() + chain.slice(1)}
+                    {SUPPORTED_CHAINS[chain]?.name || chain}
                   </option>
                 ))}
               </select>
+              <p className="text-[10px] mt-1" style={{ color: "#6a8fb5" }}>
+                💡 Must match your current network in MetaMask
+              </p>
             </div>
 
             {/* Target Chain */}
@@ -189,7 +200,7 @@ export default function AvailBridgeNode({
                 className="text-xs font-medium"
                 style={{ color: "#8a9fb5" }}
               >
-                Target Chain
+                Target Chain (Where to send tokens)
               </label>
               <select
                 value={node.inputs?.targetChain || ""}
@@ -203,13 +214,16 @@ export default function AvailBridgeNode({
                   color: "#e0e8f0",
                 }}
               >
-                <option value="">Select chain...</option>
-                {supportedChains.map((chain) => (
+                <option value="">Select destination...</option>
+                {destinationChains.map((chain) => (
                   <option key={chain} value={chain}>
-                    {chain.charAt(0).toUpperCase() + chain.slice(1)}
+                    {SUPPORTED_CHAINS[chain]?.name || chain}
                   </option>
                 ))}
               </select>
+              <p className="text-[10px] mt-1" style={{ color: "#6a8fb5" }}>
+                ⏱️ Bridge takes 10-15 minutes to complete
+              </p>
             </div>
 
             {/* Token */}
@@ -220,18 +234,24 @@ export default function AvailBridgeNode({
               >
                 Token
               </label>
-              <input
-                type="text"
+              <select
                 value={node.inputs?.token || ""}
                 onChange={(e) => handleInputChange("token", e.target.value)}
-                placeholder="e.g., USDC, ETH"
                 className="w-full px-2 py-1.5 rounded text-xs mt-1"
                 style={{
                   background: "rgba(0, 0, 0, 0.3)",
                   border: "1px solid rgba(150, 220, 180, 0.3)",
                   color: "#e0e8f0",
                 }}
-              />
+              >
+                <option value="">Select token...</option>
+                <option value="ETH">ETH - Ethereum</option>
+                <option value="USDC">USDC - USD Coin</option>
+                <option value="USDT">USDT - Tether</option>
+              </select>
+              <p className="text-[10px] mt-1" style={{ color: "#6a8fb5" }}>
+                ✓ Only ETH, USDC, USDT supported
+              </p>
             </div>
 
             {/* Amount */}

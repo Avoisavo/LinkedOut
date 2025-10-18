@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import {
   initializeNexusClient,
   isNexusClientInitialized,
+  getNexusClient,
 } from "../../../lib/avail/nexusClient";
 import {
   executeBridge,
@@ -30,6 +31,7 @@ export default function AvailExecutor() {
   const [walletConnected, setWalletConnected] = useState(false);
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
 
+  // Check wallet connection on mount (but don't initialize SDK yet)
   useEffect(() => {
     checkWalletConnection();
   }, []);
@@ -44,11 +46,8 @@ export default function AvailExecutor() {
         if (accounts.length > 0) {
           setWalletConnected(true);
           setWalletAddress(accounts[0]);
-
-          // Initialize Nexus Client if not already initialized
-          if (!isNexusClientInitialized()) {
-            await initializeNexusClient((window as any).ethereum);
-          }
+          console.log("ℹ️ Wallet already connected:", accounts[0]);
+          console.log("ℹ️ SDK will initialize when you execute a workflow");
         }
       } catch (error) {
         console.error("Error checking wallet connection:", error);
@@ -63,18 +62,19 @@ export default function AvailExecutor() {
     }
 
     try {
-      // Initialize Nexus Client (this will handle wallet connection and chain switching)
-      await initializeNexusClient((window as any).ethereum);
+      const provider = (window as any).ethereum;
 
-      // Get accounts after initialization
-      const accounts = await (window as any).ethereum.request({
-        method: "eth_accounts",
+      // Request wallet connection
+      console.log("📱 Requesting wallet connection...");
+      const accounts = await provider.request({
+        method: "eth_requestAccounts",
       });
 
       if (accounts.length > 0) {
         setWalletConnected(true);
         setWalletAddress(accounts[0]);
         console.log("✅ Wallet connected:", accounts[0]);
+        console.log("ℹ️ SDK will initialize when you execute a workflow");
         return true;
       }
 
@@ -88,10 +88,30 @@ export default function AvailExecutor() {
     }
   };
 
+  const disconnectWallet = () => {
+    setWalletConnected(false);
+    setWalletAddress(null);
+
+    // Deinitialize Nexus SDK if it exists
+    if (isNexusClientInitialized()) {
+      try {
+        const nexusClient = getNexusClient();
+        if (nexusClient && typeof nexusClient.deinit === "function") {
+          nexusClient.deinit();
+        }
+      } catch (error) {
+        console.log("SDK cleanup:", error);
+      }
+    }
+
+    console.log("👋 Wallet disconnected");
+  };
+
   return {
     walletConnected,
     walletAddress,
     connectWallet,
+    disconnectWallet,
     executeWorkflow: async (
       workflowId: string,
       nodes: any[]
