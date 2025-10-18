@@ -1,23 +1,16 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { ConnectKitButton } from "connectkit";
 
 interface HeaderProps {
   title?: string;
   showBackButton?: boolean;
-  walletConnected?: boolean;
-  walletAddress?: string | null;
-  onConnectWallet?: () => void;
-  onDisconnectWallet?: () => void;
 }
 
 export default function Header({
   title = "LinkedOut",
   showBackButton = false,
-  walletConnected = false,
-  walletAddress = null,
-  onConnectWallet,
-  onDisconnectWallet,
 }: HeaderProps) {
   const router = useRouter();
 
@@ -130,87 +123,93 @@ export default function Header({
 
       {/* Right Side - Connect Wallet */}
       <div className="flex items-center gap-4">
-        {walletConnected ? (
-          <div className="flex items-center gap-2">
-            <button
-              onClick={onConnectWallet}
-              className="px-6 py-2.5 rounded-lg font-semibold transition-all hover:scale-105 flex items-center gap-2"
-              style={{
-                fontFamily: "'Orbitron', sans-serif",
-                background:
-                  "linear-gradient(135deg, rgba(80, 200, 120, 0.5), rgba(60, 180, 100, 0.6))",
-                border: "1px solid rgba(120, 220, 150, 0.4)",
-                color: "#ffffff",
-                backdropFilter: "blur(15px)",
-                boxShadow: `0 8px 24px rgba(80, 200, 120, 0.3),
-                   inset 0 1px 2px rgba(255, 255, 255, 0.2),
-                   0 0 30px rgba(100, 200, 150, 0.25)`,
-                letterSpacing: "0.05em",
-                fontSize: "14px",
-              }}
-            >
-              <div
-                className="w-2 h-2 rounded-full animate-pulse"
-                style={{ background: "#4ade80" }}
-              />
-              <span>
-                {walletAddress
-                  ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`
-                  : "Connected"}
-              </span>
-            </button>
-            <button
-              onClick={onDisconnectWallet}
-              className="px-4 py-2.5 rounded-lg font-semibold transition-all hover:scale-105"
-              style={{
-                fontFamily: "'Orbitron', sans-serif",
-                background:
-                  "linear-gradient(135deg, rgba(200, 80, 80, 0.5), rgba(180, 60, 60, 0.6))",
-                border: "1px solid rgba(220, 100, 100, 0.4)",
-                color: "#ffffff",
-                backdropFilter: "blur(15px)",
-                boxShadow: `0 4px 12px rgba(200, 80, 80, 0.3)`,
-                letterSpacing: "0.05em",
-                fontSize: "14px",
-              }}
-            >
-              Disconnect
-            </button>
-          </div>
-        ) : (
-          <button
-            onClick={onConnectWallet}
-            className="px-6 py-2.5 rounded-lg font-semibold transition-all hover:scale-105 flex items-center gap-2"
-            style={{
-              fontFamily: "'Orbitron', sans-serif",
-              background:
-                "linear-gradient(135deg, rgba(100, 150, 200, 0.5), rgba(80, 120, 180, 0.6))",
-              border: "1px solid rgba(150, 180, 220, 0.4)",
-              color: "#ffffff",
-              backdropFilter: "blur(15px)",
-              boxShadow: `0 8px 24px rgba(80, 120, 180, 0.3),
-                 inset 0 1px 2px rgba(255, 255, 255, 0.2),
-                 0 0 30px rgba(100, 150, 200, 0.25)`,
-              letterSpacing: "0.05em",
-              fontSize: "14px",
-            }}
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"
-              />
-            </svg>
-            Connect Wallet
-          </button>
-        )}
+        <ConnectKitButton.Custom>
+          {({ isConnected, show, address }) => (
+            <>
+              {isConnected ? (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={show}
+                    className="px-6 py-2.5 rounded-lg font-semibold transition-all hover:scale-105 flex items-center gap-2"
+                    style={{
+                      fontFamily: "'Orbitron', sans-serif",
+                      background:
+                        "linear-gradient(135deg, rgba(80, 200, 120, 0.5), rgba(60, 180, 100, 0.6))",
+                      border: "1px solid rgba(120, 220, 150, 0.4)",
+                      color: "#ffffff",
+                      backdropFilter: "blur(15px)",
+                      boxShadow: `0 8px 24px rgba(80, 200, 120, 0.3),
+                         inset 0 1px 2px rgba(255, 255, 255, 0.2),
+                         0 0 30px rgba(100, 200, 150, 0.25)`,
+                      letterSpacing: "0.05em",
+                      fontSize: "14px",
+                    }}
+                  >
+                    <div
+                      className="w-2 h-2 rounded-full animate-pulse"
+                      style={{ background: "#4ade80" }}
+                    />
+                    <span>
+                      {address
+                        ? `${address.slice(0, 6)}...${address.slice(-4)}`
+                        : "Connected"}
+                    </span>
+                  </button>
+                  <button
+                    onClick={show}
+                    className="px-4 py-2.5 rounded-lg font-semibold transition-all hover:scale-105"
+                    style={{
+                      fontFamily: "'Orbitron', sans-serif",
+                      background:
+                        "linear-gradient(135deg, rgba(200, 80, 80, 0.5), rgba(180, 60, 60, 0.6))",
+                      border: "1px solid rgba(220, 100, 100, 0.4)",
+                      color: "#ffffff",
+                      backdropFilter: "blur(15px)",
+                      boxShadow: `0 4px 12px rgba(200, 80, 80, 0.3)`,
+                      letterSpacing: "0.05em",
+                      fontSize: "14px",
+                    }}
+                  >
+                    Disconnect
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={show}
+                  className="px-6 py-2.5 rounded-lg font-semibold transition-all hover:scale-105 flex items-center gap-2"
+                  style={{
+                    fontFamily: "'Orbitron', sans-serif",
+                    background:
+                      "linear-gradient(135deg, rgba(100, 150, 200, 0.5), rgba(80, 120, 180, 0.6))",
+                    border: "1px solid rgba(150, 180, 220, 0.4)",
+                    color: "#ffffff",
+                    backdropFilter: "blur(15px)",
+                    boxShadow: `0 8px 24px rgba(80, 120, 180, 0.3),
+                       inset 0 1px 2px rgba(255, 255, 255, 0.2),
+                       0 0 30px rgba(100, 150, 200, 0.25)`,
+                    letterSpacing: "0.05em",
+                    fontSize: "14px",
+                  }}
+                >
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"
+                    />
+                  </svg>
+                  Connect Wallet
+                </button>
+              )}
+            </>
+          )}
+        </ConnectKitButton.Custom>
       </div>
 
       {/* Fonts */}

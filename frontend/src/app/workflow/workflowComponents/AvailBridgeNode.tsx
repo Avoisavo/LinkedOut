@@ -14,7 +14,6 @@ interface AvailBridgeNodeProps {
     icon: string;
     position: { x: number; y: number };
     inputs?: {
-      sourceChain?: string;
       targetChain?: string;
       token?: string;
       amount?: string;
@@ -38,13 +37,13 @@ export default function AvailBridgeNode({
   const [isExpanded, setIsExpanded] = useState(false);
   const supportedChains = getSupportedChainNames();
 
-  // Valid source chains (where you can bridge FROM)
-  const sourceChains = ["sepolia"]; // Ethereum Sepolia is the main testnet source
-
   // Valid destination chains (where you can bridge TO)
+  // Source chain is auto-detected from connected wallet (Sepolia)
   const destinationChains = supportedChains.filter(
     (chain) => chain !== "sepolia"
   );
+
+  const tokens = ["ETH", "USDC", "USDT"];
 
   const handleInputChange = (field: string, value: string) => {
     onUpdateInputs(node.id, {
@@ -161,45 +160,26 @@ export default function AvailBridgeNode({
         {/* Configuration Fields */}
         {isExpanded && (
           <div className="mt-3 space-y-3" onClick={(e) => e.stopPropagation()}>
-            {/* Source Chain */}
-            <div>
-              <label
-                className="text-xs font-medium"
-                style={{ color: "#8a9fb5" }}
-              >
-                Source Chain (Where you have tokens)
-              </label>
-              <select
-                value={node.inputs?.sourceChain || ""}
-                onChange={(e) =>
-                  handleInputChange("sourceChain", e.target.value)
-                }
-                className="w-full px-2 py-1.5 rounded text-xs mt-1"
-                style={{
-                  background: "rgba(0, 0, 0, 0.3)",
-                  border: "1px solid rgba(150, 220, 180, 0.3)",
-                  color: "#e0e8f0",
-                }}
-              >
-                <option value="">Select source chain...</option>
-                {sourceChains.map((chain) => (
-                  <option key={chain} value={chain}>
-                    {SUPPORTED_CHAINS[chain]?.name || chain}
-                  </option>
-                ))}
-              </select>
-              <p className="text-[10px] mt-1" style={{ color: "#6a8fb5" }}>
-                💡 Must match your current network in MetaMask
+            {/* Info */}
+            <div
+              className="px-3 py-2 rounded"
+              style={{
+                background: "rgba(100, 150, 200, 0.2)",
+                border: "1px solid rgba(100, 150, 200, 0.3)",
+              }}
+            >
+              <p className="text-[10px]" style={{ color: "#a0b8d0" }}>
+                💡 Source: Auto-detected from your connected wallet (Sepolia)
               </p>
             </div>
 
-            {/* Target Chain */}
+            {/* Destination Chain */}
             <div>
               <label
                 className="text-xs font-medium"
                 style={{ color: "#8a9fb5" }}
               >
-                Target Chain (Where to send tokens)
+                Destination Chain
               </label>
               <select
                 value={node.inputs?.targetChain || ""}
@@ -244,13 +224,12 @@ export default function AvailBridgeNode({
                 }}
               >
                 <option value="">Select token...</option>
-                <option value="ETH">ETH - Ethereum</option>
-                <option value="USDC">USDC - USD Coin</option>
-                <option value="USDT">USDT - Tether</option>
+                {tokens.map((token) => (
+                  <option key={token} value={token}>
+                    {token}
+                  </option>
+                ))}
               </select>
-              <p className="text-[10px] mt-1" style={{ color: "#6a8fb5" }}>
-                ✓ Only ETH, USDC, USDT supported
-              </p>
             </div>
 
             {/* Amount */}
@@ -282,16 +261,14 @@ export default function AvailBridgeNode({
         )}
 
         {/* Summary when collapsed */}
-        {!isExpanded &&
-          node.inputs?.sourceChain &&
-          node.inputs?.targetChain && (
-            <div className="mt-2 text-xs" style={{ color: "#8a9fb5" }}>
-              {node.inputs.sourceChain} → {node.inputs.targetChain}
-              {node.inputs.amount &&
-                node.inputs.token &&
-                ` | ${node.inputs.amount} ${node.inputs.token}`}
-            </div>
-          )}
+        {!isExpanded && node.inputs?.targetChain && (
+          <div className="mt-2 text-xs" style={{ color: "#8a9fb5" }}>
+            Sepolia → {node.inputs.targetChain}
+            {node.inputs.amount &&
+              node.inputs.token &&
+              ` | ${node.inputs.amount} ${node.inputs.token}`}
+          </div>
+        )}
       </div>
 
       {/* Add Node Button */}

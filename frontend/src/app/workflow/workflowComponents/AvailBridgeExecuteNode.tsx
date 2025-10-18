@@ -11,7 +11,6 @@ interface AvailBridgeExecuteNodeProps {
     icon: string;
     position: { x: number; y: number };
     inputs?: {
-      sourceChain?: string;
       targetChain?: string;
       token?: string;
       amount?: string;
@@ -24,7 +23,7 @@ interface AvailBridgeExecuteNodeProps {
   isLast: boolean;
   onMouseDown: (e: React.MouseEvent, nodeId: string) => void;
   onDelete: (nodeId: string) => void;
-  onUpdateInputs: (nodeId: string, inputs: any) => void;
+  onUpdateInputs: (nodeId: string, inputs: Record<string, string>) => void;
   onAddNode: () => void;
 }
 
@@ -38,6 +37,12 @@ export default function AvailBridgeExecuteNode({
 }: AvailBridgeExecuteNodeProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const supportedChains = getSupportedChainNames();
+
+  const destinationChains = supportedChains.filter(
+    (chain) => chain !== "sepolia"
+  );
+
+  const tokens = ["ETH", "USDC", "USDT"];
 
   const handleInputChange = (field: string, value: string) => {
     onUpdateInputs(node.id, {
@@ -164,32 +169,18 @@ export default function AvailBridgeExecuteNode({
               </p>
 
               <div className="space-y-2">
-                <div>
-                  <label
-                    className="text-xs font-medium"
-                    style={{ color: "#8a9fb5" }}
-                  >
-                    Source Chain
-                  </label>
-                  <select
-                    value={node.inputs?.sourceChain || ""}
-                    onChange={(e) =>
-                      handleInputChange("sourceChain", e.target.value)
-                    }
-                    className="w-full px-2 py-1.5 rounded text-xs mt-1"
-                    style={{
-                      background: "rgba(0, 0, 0, 0.3)",
-                      border: "1px solid rgba(180, 150, 220, 0.3)",
-                      color: "#e0e8f0",
-                    }}
-                  >
-                    <option value="">Select chain...</option>
-                    {supportedChains.map((chain) => (
-                      <option key={chain} value={chain}>
-                        {chain.charAt(0).toUpperCase() + chain.slice(1)}
-                      </option>
-                    ))}
-                  </select>
+                {/* Info */}
+                <div
+                  className="px-3 py-2 rounded"
+                  style={{
+                    background: "rgba(150, 100, 200, 0.2)",
+                    border: "1px solid rgba(150, 100, 200, 0.3)",
+                  }}
+                >
+                  <p className="text-[10px]" style={{ color: "#c0b0d0" }}>
+                    💡 Source: Auto-detected from your connected wallet
+                    (Sepolia)
+                  </p>
                 </div>
 
                 <div>
@@ -197,7 +188,7 @@ export default function AvailBridgeExecuteNode({
                     className="text-xs font-medium"
                     style={{ color: "#8a9fb5" }}
                   >
-                    Target Chain
+                    Destination Chain
                   </label>
                   <select
                     value={node.inputs?.targetChain || ""}
@@ -211,8 +202,8 @@ export default function AvailBridgeExecuteNode({
                       color: "#e0e8f0",
                     }}
                   >
-                    <option value="">Select chain...</option>
-                    {supportedChains.map((chain) => (
+                    <option value="">Select destination...</option>
+                    {destinationChains.map((chain) => (
                       <option key={chain} value={chain}>
                         {chain.charAt(0).toUpperCase() + chain.slice(1)}
                       </option>
@@ -227,18 +218,23 @@ export default function AvailBridgeExecuteNode({
                   >
                     Token
                   </label>
-                  <input
-                    type="text"
+                  <select
                     value={node.inputs?.token || ""}
                     onChange={(e) => handleInputChange("token", e.target.value)}
-                    placeholder="e.g., USDC, ETH"
                     className="w-full px-2 py-1.5 rounded text-xs mt-1"
                     style={{
                       background: "rgba(0, 0, 0, 0.3)",
                       border: "1px solid rgba(180, 150, 220, 0.3)",
                       color: "#e0e8f0",
                     }}
-                  />
+                  >
+                    <option value="">Select token...</option>
+                    {tokens.map((token) => (
+                      <option key={token} value={token}>
+                        {token}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
@@ -254,7 +250,7 @@ export default function AvailBridgeExecuteNode({
                     onChange={(e) =>
                       handleInputChange("amount", e.target.value)
                     }
-                    placeholder="e.g., 100"
+                    placeholder="e.g., 0.01"
                     className="w-full px-2 py-1.5 rounded text-xs mt-1"
                     style={{
                       background: "rgba(0, 0, 0, 0.3)",

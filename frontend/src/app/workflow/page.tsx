@@ -14,7 +14,7 @@ import ModelSelectionModal from "./workflowComponents/ModelSelectionModal";
 import IfNodeConfig from "./workflowComponents/IfNodeConfig";
 import AvailBridgeNode from "./workflowComponents/AvailBridgeNode";
 import AvailBridgeExecuteNode from "./workflowComponents/AvailBridgeExecuteNode";
-import { useAvailExecutor } from "./workflowComponents/AvailExecutor";
+import { useAvailExecutor } from "./workflowComponents/AvailExecutorWagmi";
 
 interface SubNode {
   id: string;
@@ -550,14 +550,7 @@ export default function WorkflowPage() {
       }}
     >
       {/* Header */}
-      <Header
-        title="My Workflow"
-        showBackButton={true}
-        walletConnected={availExecutor.walletConnected}
-        walletAddress={availExecutor.walletAddress}
-        onConnectWallet={availExecutor.connectWallet}
-        onDisconnectWallet={availExecutor.disconnectWallet}
-      />
+      <Header title="My Workflow" showBackButton={true} />
 
       {/* MetaMask Approval Reminder Banner */}
       {showMetaMaskReminder && (
