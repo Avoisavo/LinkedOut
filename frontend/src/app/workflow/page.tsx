@@ -67,6 +67,7 @@ export default function WorkflowPage() {
   const [showIfConfig, setShowIfConfig] = useState(false);
   const [selectedIfNodeId, setSelectedIfNodeId] = useState<string | null>(null);
   const [zoomLevel, setZoomLevel] = useState(1);
+  const [showMetaMaskReminder, setShowMetaMaskReminder] = useState(false);
   const canvasRef = useRef<HTMLDivElement>(null);
 
   // Avail Executor
@@ -477,11 +478,16 @@ export default function WorkflowPage() {
     );
 
     if (hasAvailNodes) {
+      // Show MetaMask reminder for Avail workflows
+      setShowMetaMaskReminder(true);
+
       // Use Avail Executor for workflows with Avail nodes
       const result = await availExecutor.executeWorkflow(
         "temp-workflow-id",
         nodes
       );
+
+      setShowMetaMaskReminder(false);
 
       if (result.success) {
         setExecutionLogs(result.logs);
@@ -552,6 +558,53 @@ export default function WorkflowPage() {
         onConnectWallet={availExecutor.connectWallet}
         onDisconnectWallet={availExecutor.disconnectWallet}
       />
+
+      {/* MetaMask Approval Reminder Banner */}
+      {showMetaMaskReminder && (
+        <div
+          className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 px-6 py-4 rounded-lg shadow-2xl animate-pulse"
+          style={{
+            background:
+              "linear-gradient(135deg, rgba(255, 140, 0, 0.95), rgba(255, 100, 0, 0.95))",
+            border: "2px solid rgba(255, 200, 100, 0.6)",
+            boxShadow: "0 8px 32px rgba(255, 140, 0, 0.5)",
+            maxWidth: "500px",
+          }}
+        >
+          <div className="flex items-center gap-3">
+            <div
+              className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0"
+              style={{
+                background: "rgba(255, 255, 255, 0.2)",
+                border: "2px solid rgba(255, 255, 255, 0.5)",
+              }}
+            >
+              <svg
+                className="w-7 h-7 text-white"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
+              </svg>
+            </div>
+            <div>
+              <p
+                className="font-bold text-white mb-1"
+                style={{
+                  fontFamily: "'Orbitron', sans-serif",
+                  fontSize: "16px",
+                }}
+              >
+                ⚠️ Check Your MetaMask
+              </p>
+              <p className="text-sm text-white/90">
+                Please approve the pending transaction(s) in your MetaMask
+                extension
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Workflow Canvas */}
       <div className="relative z-10" style={{ height: "calc(100vh - 64px)" }}>

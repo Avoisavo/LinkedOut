@@ -79,9 +79,12 @@ export async function initializeNexusClient(provider: any): Promise<NexusSDK> {
       "📝 Note: MetaMask will prompt for signature to create Chain Abstraction account (one-time setup)"
     );
 
-    // Request wallet connection if not already connected
-    await provider.request({ method: "eth_requestAccounts" });
-    console.log("✅ Wallet accounts accessible");
+    // Check if wallet is already connected (don't request connection)
+    const accounts = await provider.request({ method: "eth_accounts" });
+    if (accounts.length === 0) {
+      throw new Error("No wallet connected. Please connect your wallet first.");
+    }
+    console.log("✅ Using connected wallet:", accounts[0]);
 
     // Create Nexus SDK instance
     // NOTE: SDK will handle network switching automatically when bridging

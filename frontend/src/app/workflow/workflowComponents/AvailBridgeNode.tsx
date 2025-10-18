@@ -18,13 +18,12 @@ interface AvailBridgeNodeProps {
       targetChain?: string;
       token?: string;
       amount?: string;
-      recipientAddress?: string;
     };
   };
   isLast: boolean;
   onMouseDown: (e: React.MouseEvent, nodeId: string) => void;
   onDelete: (nodeId: string) => void;
-  onUpdateInputs: (nodeId: string, inputs: any) => void;
+  onUpdateInputs: (nodeId: string, inputs: Record<string, string>) => void;
   onAddNode: () => void;
 }
 
@@ -266,7 +265,7 @@ export default function AvailBridgeNode({
                 type="text"
                 value={node.inputs?.amount || ""}
                 onChange={(e) => handleInputChange("amount", e.target.value)}
-                placeholder="e.g., 100"
+                placeholder="e.g., 0.01"
                 className="w-full px-2 py-1.5 rounded text-xs mt-1"
                 style={{
                   background: "rgba(0, 0, 0, 0.3)",
@@ -274,30 +273,10 @@ export default function AvailBridgeNode({
                   color: "#e0e8f0",
                 }}
               />
-            </div>
-
-            {/* Recipient Address (Optional) */}
-            <div>
-              <label
-                className="text-xs font-medium"
-                style={{ color: "#8a9fb5" }}
-              >
-                Recipient Address (Optional)
-              </label>
-              <input
-                type="text"
-                value={node.inputs?.recipientAddress || ""}
-                onChange={(e) =>
-                  handleInputChange("recipientAddress", e.target.value)
-                }
-                placeholder="0x..."
-                className="w-full px-2 py-1.5 rounded text-xs mt-1"
-                style={{
-                  background: "rgba(0, 0, 0, 0.3)",
-                  border: "1px solid rgba(150, 220, 180, 0.3)",
-                  color: "#e0e8f0",
-                }}
-              />
+              <p className="text-[10px] mt-1" style={{ color: "#6a8fb5" }}>
+                💡 Tokens will be sent to your connected wallet on the
+                destination chain
+              </p>
             </div>
           </div>
         )}

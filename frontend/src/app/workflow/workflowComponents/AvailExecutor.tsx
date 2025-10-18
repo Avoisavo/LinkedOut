@@ -31,29 +31,29 @@ export default function AvailExecutor() {
   const [walletConnected, setWalletConnected] = useState(false);
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
 
-  // Check wallet connection on mount (but don't initialize SDK yet)
+  // Listen for account changes
   useEffect(() => {
-    checkWalletConnection();
-  }, []);
-
-  const checkWalletConnection = async () => {
     if (typeof window !== "undefined" && (window as any).ethereum) {
-      try {
-        const accounts = await (window as any).ethereum.request({
-          method: "eth_accounts",
-        });
+      const provider = (window as any).ethereum;
 
-        if (accounts.length > 0) {
-          setWalletConnected(true);
+      const handleAccountsChanged = (accounts: string[]) => {
+        if (accounts.length === 0) {
+          // User disconnected their wallet
+          disconnectWallet();
+        } else if (walletConnected && accounts[0] !== walletAddress) {
+          // User switched accounts
+          console.log("👤 Account switched to:", accounts[0]);
           setWalletAddress(accounts[0]);
-          console.log("ℹ️ Wallet already connected:", accounts[0]);
-          console.log("ℹ️ SDK will initialize when you execute a workflow");
         }
-      } catch (error) {
-        console.error("Error checking wallet connection:", error);
-      }
+      };
+
+      provider.on("accountsChanged", handleAccountsChanged);
+
+      return () => {
+        provider.removeListener("accountsChanged", handleAccountsChanged);
+      };
     }
-  };
+  }, [walletConnected, walletAddress]);
 
   const connectWallet = async (): Promise<boolean> => {
     if (typeof window === "undefined" || !(window as any).ethereum) {
@@ -64,8 +64,13 @@ export default function AvailExecutor() {
     try {
       const provider = (window as any).ethereum;
 
-      // Request wallet connection
+      // Always request accounts to show MetaMask account selector
+      // This allows user to choose which wallet to connect
       console.log("📱 Requesting wallet connection...");
+      console.log(
+        "💡 Please select which account you want to connect in MetaMask"
+      );
+
       const accounts = await provider.request({
         method: "eth_requestAccounts",
       });
@@ -74,7 +79,12 @@ export default function AvailExecutor() {
         setWalletConnected(true);
         setWalletAddress(accounts[0]);
         console.log("✅ Wallet connected:", accounts[0]);
-        console.log("ℹ️ SDK will initialize when you execute a workflow");
+        console.log(
+          "ℹ️ Nexus SDK will initialize when you execute your first workflow"
+        );
+        console.log(
+          "ℹ️ You will be asked to sign a message to create your Chain Abstraction account"
+        );
         return true;
       }
 
@@ -83,28 +93,38 @@ export default function AvailExecutor() {
       console.error("Error connecting wallet:", error);
       const errorMessage =
         error instanceof Error ? error.message : "Failed to connect wallet";
+
+      // Don't show alert for user rejection
+      if (errorMessage.includes("User rejected")) {
+        console.log("👋 Wallet connection cancelled by user");
+        return false;
+      }
+
       alert(`Wallet connection failed: ${errorMessage}`);
       return false;
     }
   };
 
-  const disconnectWallet = () => {
+  const disconnectWallet = async () => {
     setWalletConnected(false);
     setWalletAddress(null);
 
     // Deinitialize Nexus SDK if it exists
     if (isNexusClientInitialized()) {
       try {
-        const nexusClient = getNexusClient();
-        if (nexusClient && typeof nexusClient.deinit === "function") {
-          nexusClient.deinit();
-        }
+        const { resetNexusClient } = await import(
+          "../../../lib/avail/nexusClient"
+        );
+        await resetNexusClient();
+        console.log("🔌 Nexus SDK deinitialized");
       } catch (error) {
         console.log("SDK cleanup:", error);
       }
     }
 
-    console.log("👋 Wallet disconnected");
+    console.log(
+      "👋 Wallet disconnected. Connect again to choose a different account."
+    );
   };
 
   return {
@@ -139,9 +159,9 @@ export async function executeAvailWorkflow(
   const txHashes: string[] = [];
 
   try {
-    // Ensure wallet is connected and Nexus SDK is initialized
-    if (!walletConnected || !isNexusClientInitialized()) {
-      console.log("🔌 Connecting wallet and initializing Nexus SDK...");
+    // Ensure wallet is connected first
+    if (!walletConnected) {
+      console.log("🔌 Wallet not connected. Requesting connection...");
       const connected = await connectWallet();
       if (!connected) {
         throw new Error(
@@ -150,11 +170,31 @@ export async function executeAvailWorkflow(
       }
     }
 
-    // Double-check Nexus SDK is initialized
+    // Initialize Nexus SDK only when needed (on first execution)
     if (!isNexusClientInitialized()) {
-      console.log("🔧 Initializing Nexus SDK...");
+      console.log("🔧 Initializing Nexus SDK for first time...");
+      console.log(
+        "⚠️ IMPORTANT: You will need to approve a signature in MetaMask"
+      );
+      console.log(
+        "⚠️ This creates your Chain Abstraction account (one-time setup)"
+      );
+
       if (typeof window !== "undefined" && (window as any).ethereum) {
-        await initializeNexusClient((window as any).ethereum);
+        try {
+          await initializeNexusClient((window as any).ethereum);
+          console.log("✅ Nexus SDK initialized successfully!");
+        } catch (error) {
+          if (
+            error instanceof Error &&
+            error.message.includes("User rejected")
+          ) {
+            throw new Error(
+              "You rejected the signature request. Please try again and approve the signature to create your Chain Abstraction account."
+            );
+          }
+          throw error;
+        }
       } else {
         throw new Error("No wallet provider found. Please install MetaMask.");
       }
@@ -298,8 +338,7 @@ export async function executeAvailWorkflow(
  * Execute an Avail Bridge node
  */
 async function executeAvailBridgeNode(node: any) {
-  const { sourceChain, targetChain, token, amount, recipientAddress } =
-    node.inputs || {};
+  const { sourceChain, targetChain, token, amount } = node.inputs || {};
 
   if (!sourceChain || !targetChain || !token || !amount) {
     throw new Error("Missing required bridge parameters");
@@ -311,13 +350,15 @@ async function executeAvailBridgeNode(node: any) {
     token,
     amount,
   });
+  console.log(
+    "ℹ️ Tokens will be sent to your connected wallet on the destination chain"
+  );
 
   const result = await executeBridge({
     sourceChain,
     targetChain,
     token,
     amount,
-    recipientAddress,
   });
 
   if (!result.success) {

@@ -143,10 +143,13 @@ export interface BridgeParams {
   targetChain: string;
   token: string;
   amount: string;
-  recipientAddress?: string;
+  // Note: Nexus bridge automatically sends to the connected wallet address
+  // on the destination chain. Custom recipient addresses are not supported
+  // for simple bridge operations (only for bridgeAndExecute).
 }
 
 export interface BridgeAndExecuteParams extends BridgeParams {
+  recipientAddress?: string; // For bridgeAndExecute, custom recipient is supported
   executeContract: string;
   executeFunction: string;
   executeFunctionParams?: any[];
@@ -198,6 +201,9 @@ export async function executeBridge(
     );
     console.log("  • Token:", params.token);
     console.log("  • Amount:", params.amount);
+    console.log(
+      "  • Recipient: Your connected wallet (same address on destination chain)"
+    );
 
     // Check if Nexus SDK has the bridge method
     if (typeof nexusClient.bridge !== "function") {
@@ -209,6 +215,7 @@ export async function executeBridge(
     console.log("📝 Preparing bridge transaction...");
     console.log("⚠️ SDK will handle network switching automatically");
     console.log("⚠️ Cross-chain bridges take 5-15 minutes to complete");
+    console.log("ℹ️ Check your MetaMask for pending approval requests");
 
     // Use Nexus SDK to execute the bridge
     // Note: SDK auto-detects source chain from connected wallet
