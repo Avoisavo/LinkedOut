@@ -72,6 +72,63 @@ export default function WorkflowPage() {
   // Avail Executor
   const availExecutor = useAvailExecutor();
 
+  // Make test function available in console for debugging
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      // Define test function in window scope
+      (window as any).testNexusSDK = async () => {
+        console.log("🧪 Testing Nexus SDK...");
+
+        if (!(window as any).ethereum) {
+          console.error("❌ No wallet provider found");
+          return;
+        }
+
+        try {
+          const { NexusSDK } = await import("@avail-project/nexus-core");
+          const provider = (window as any).ethereum;
+
+          // Connect wallet
+          console.log("1️⃣ Connecting wallet...");
+          const accounts = await provider.request({
+            method: "eth_requestAccounts",
+          });
+          console.log("✅ Connected:", accounts[0]);
+
+          // Initialize SDK
+          console.log("2️⃣ Initializing Nexus SDK...");
+          const sdk = new NexusSDK({
+            network: "testnet",
+            debug: true,
+          });
+
+          await sdk.initialize(provider);
+          console.log("✅ SDK initialized");
+
+          // Check available methods
+          console.log("3️⃣ Available SDK methods:");
+          console.log("  - bridge:", typeof sdk.bridge);
+          console.log("  - bridgeAndExecute:", typeof sdk.bridgeAndExecute);
+          console.log("  - isInitialized:", typeof sdk.isInitialized);
+
+          // Log the SDK object structure
+          console.log("4️⃣ SDK object keys:", Object.keys(sdk));
+          console.log(
+            "5️⃣ SDK prototype methods:",
+            Object.getOwnPropertyNames(Object.getPrototypeOf(sdk))
+          );
+
+          return sdk;
+        } catch (error) {
+          console.error("❌ Test failed:", error);
+        }
+      };
+
+      console.log("✅ testNexusSDK() function available in console");
+      console.log("📝 Run: testNexusSDK()");
+    }
+  }, []);
+
   const handleAddNode = (nodeType: any) => {
     // Special handling for AI Agent node
     if (nodeType.id === "ai") {
