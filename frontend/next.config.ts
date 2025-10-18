@@ -13,6 +13,8 @@ const nextConfig: NextConfig = {
         stream: require.resolve("stream-browserify"),
         buffer: require.resolve("buffer/"),
         process: require.resolve("process/browser"),
+        // Fix for MetaMask SDK requiring React Native dependencies
+        "@react-native-async-storage/async-storage": false,
       };
     }
     return config;

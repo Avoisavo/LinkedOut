@@ -1,5 +1,11 @@
 "use client";
-import { WagmiProvider, createConfig, http } from "wagmi";
+import {
+  WagmiProvider,
+  createConfig,
+  http,
+  createStorage,
+  noopStorage,
+} from "wagmi";
 import {
   baseSepolia,
   arbitrumSepolia,
@@ -28,15 +34,21 @@ const config = createConfig(
     },
 
     walletConnectProjectId:
-      process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "dummy-project-id",
+      process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "",
 
     // Required App Info
     appName: "LinkedOut",
 
     // Optional App Info
     appDescription: "LinkedOut Workflow Automation",
-    appUrl: "https://linkedout.app",
+    appUrl:
+      typeof window !== "undefined"
+        ? window.location.origin
+        : "http://localhost:3000",
     appIcon: "https://linkedout.app/icon.png",
+
+    // Disable storage to prevent auto-reconnect
+    storage: createStorage({ storage: noopStorage }),
   })
 );
 
@@ -44,9 +56,19 @@ const queryClient = new QueryClient();
 
 export const Web3Provider = ({ children }: { children: React.ReactNode }) => {
   return (
-    <WagmiProvider config={config}>
+    <WagmiProvider config={config} reconnectOnMount={false}>
       <QueryClientProvider client={queryClient}>
-        <ConnectKitProvider theme="retro">{children}</ConnectKitProvider>
+        <ConnectKitProvider
+          theme="retro"
+          options={{
+            walletConnectCTA: "link",
+            avoidLayoutShift: true,
+            enforceSupportedChains: false,
+            embedGoogleFonts: true,
+          }}
+        >
+          {children}
+        </ConnectKitProvider>
       </QueryClientProvider>
     </WagmiProvider>
   );

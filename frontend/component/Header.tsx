@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { ConnectKitButton } from "connectkit";
+import { useDisconnect } from "wagmi";
 
 interface HeaderProps {
   title?: string;
@@ -13,6 +14,15 @@ export default function Header({
   showBackButton = false,
 }: HeaderProps) {
   const router = useRouter();
+  const { disconnectAsync } = useDisconnect();
+
+  const handleDisconnect = async () => {
+    try {
+      await disconnectAsync();
+    } catch (error) {
+      console.error("Failed to disconnect wallet", error);
+    }
+  };
 
   return (
     <div
@@ -156,7 +166,7 @@ export default function Header({
                     </span>
                   </button>
                   <button
-                    onClick={show}
+                    onClick={handleDisconnect}
                     className="px-4 py-2.5 rounded-lg font-semibold transition-all hover:scale-105"
                     style={{
                       fontFamily: "'Orbitron', sans-serif",

@@ -1,5 +1,97 @@
 import { getNexusClient, getChainConfig, ChainConfig } from "./nexusClient";
 
+// Common Contract ABIs
+const WETH_ABI = [
+  {
+    constant: false,
+    inputs: [],
+    name: "deposit",
+    outputs: [],
+    payable: true,
+    stateMutability: "payable",
+    type: "function",
+  },
+  {
+    constant: false,
+    inputs: [{ name: "wad", type: "uint256" }],
+    name: "withdraw",
+    outputs: [],
+    payable: false,
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+];
+
+// ERC20/USDC ABI (for approvals and transfers)
+const ERC20_ABI = [
+  {
+    constant: false,
+    inputs: [
+      { name: "spender", type: "address" },
+      { name: "amount", type: "uint256" },
+    ],
+    name: "approve",
+    outputs: [{ name: "", type: "bool" }],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    constant: false,
+    inputs: [
+      { name: "to", type: "address" },
+      { name: "amount", type: "uint256" },
+    ],
+    name: "transfer",
+    outputs: [{ name: "", type: "bool" }],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    constant: true,
+    inputs: [{ name: "account", type: "address" }],
+    name: "balanceOf",
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+];
+
+// AAVE V3 Pool ABI (supply function for lending)
+const AAVE_POOL_ABI = [
+  {
+    inputs: [
+      { internalType: "address", name: "asset", type: "address" },
+      { internalType: "uint256", name: "amount", type: "uint256" },
+      { internalType: "address", name: "onBehalfOf", type: "address" },
+      { internalType: "uint16", name: "referralCode", type: "uint16" },
+    ],
+    name: "supply",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+];
+
+// Contract address to ABI mapping
+const CONTRACT_ABI_MAP: Record<string, any[]> = {
+  // WETH on Base Sepolia
+  "0x4200000000000000000000000000000000000006": WETH_ABI,
+
+  // USDC on Base Sepolia (ERC20)
+  "0x036cbd53842c5426634e7929541ec2318f3dcf7e": ERC20_ABI,
+
+  // AAVE V3 Pool on Base Mainnet (use for reference, might not be on testnet)
+  "0xa238dd80c259a72e81d7e4664a9801593f98d1c5": AAVE_POOL_ABI,
+};
+
+/**
+ * Get ABI for a known contract address, or return empty array
+ */
+function getContractABI(contractAddress: string): any[] {
+  const normalizedAddress = contractAddress.toLowerCase();
+  return CONTRACT_ABI_MAP[normalizedAddress] || [];
+}
+
 /**
  * Ensure a network is added to MetaMask before bridging
  */
@@ -347,9 +439,27 @@ export async function executeBridgeAndExecute(
       "📝 Preparing bridge & execute transaction (MetaMask will prompt for signature)..."
     );
 
+    // Get contract ABI for known contracts
+    const contractAbi = getContractABI(params.executeContract);
+
+    if (contractAbi.length === 0) {
+      console.warn(
+        `⚠️ No ABI found for contract ${params.executeContract}. This will likely fail.`
+      );
+      console.warn(
+        `⚠️ Currently supported contracts: ${Object.keys(CONTRACT_ABI_MAP).join(
+          ", "
+        )}`
+      );
+      throw new Error(
+        `No ABI found for contract ${params.executeContract}. ` +
+          `Supported contracts: ${Object.keys(CONTRACT_ABI_MAP).join(", ")}`
+      );
+    }
+
+    console.log(`✅ Using ABI for contract: ${params.executeContract}`);
+
     // Use Nexus SDK bridgeAndExecute
-    // Note: This requires contract ABI and dynamic parameter builder
-    // For now, this is a simplified version - full implementation would need proper ABI
     const result = await nexusClient.bridgeAndExecute({
       toChainId: targetChainConfig.chainId as any, // Destination chain
       token: params.token as any, // ETH, USDC, or USDT
@@ -357,12 +467,22 @@ export async function executeBridgeAndExecute(
       recipient: params.recipientAddress as `0x${string}`,
       execute: {
         contractAddress: params.executeContract,
-        contractAbi: [] as any, // TODO: Need actual contract ABI
+        contractAbi: contractAbi as any,
         functionName: params.executeFunction,
         buildFunctionParams: (token, amount, chainId, userAddress) => ({
           functionParams: parsedParams,
           value: params.executeValue || "0",
         }),
+        // IMPORTANT: Tell SDK to approve token spending on destination chain
+        // This is required for ERC20 tokens (USDC, USDT) but not ETH
+        tokenApproval:
+          params.token !== "ETH"
+            ? {
+                token: params.token as any,
+                amount: params.amount,
+                chainId: targetChainConfig.chainId as any,
+              }
+            : undefined,
       },
     });
 
