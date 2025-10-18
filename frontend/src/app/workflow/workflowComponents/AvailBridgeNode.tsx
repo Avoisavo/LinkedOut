@@ -62,17 +62,16 @@ export default function AvailBridgeNode({
       onMouseDown={(e) => onMouseDown(e, node.id)}
     >
       <div
-        className="px-6 py-4 rounded-lg min-w-[320px] cursor-move transition-all hover:scale-105 relative group"
+        className="px-6 py-4 rounded-xl min-w-[360px] cursor-move transition-all hover:scale-[1.02] relative group"
         style={{
           background:
-            "linear-gradient(135deg, rgba(100, 200, 150, 0.4), rgba(80, 180, 130, 0.5))",
-          border: "1px solid rgba(150, 220, 180, 0.4)",
-          backdropFilter: "blur(15px)",
+            "linear-gradient(135deg, rgba(20, 25, 35, 0.98), rgba(25, 30, 40, 0.98))",
+          border: "2px solid rgba(100, 220, 180, 0.6)",
+          backdropFilter: "blur(20px)",
           boxShadow: `
-            0 8px 24px rgba(0, 0, 0, 0.4),
-            0 4px 12px rgba(80, 180, 130, 0.2),
-            inset 0 1px 2px rgba(255, 255, 255, 0.2),
-            0 0 20px rgba(100, 200, 150, 0.15)
+            0 10px 30px rgba(0, 0, 0, 0.5),
+            0 0 40px rgba(100, 220, 180, 0.25),
+            inset 0 1px 2px rgba(100, 220, 180, 0.15)
           `,
         }}
       >
@@ -108,26 +107,28 @@ export default function AvailBridgeNode({
 
         <div className="flex items-center gap-3 mb-3">
           <div
-            className="w-8 h-8 rounded-full flex items-center justify-center text-lg"
+            className="w-10 h-10 rounded-lg flex items-center justify-center text-xl"
             style={{
               background:
-                "linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1))",
-              border: "1px solid rgba(255, 255, 255, 0.3)",
+                "linear-gradient(135deg, rgba(100, 220, 180, 0.3), rgba(80, 200, 160, 0.4))",
+              border: "2px solid rgba(100, 220, 180, 0.5)",
+              boxShadow: "0 0 15px rgba(100, 220, 180, 0.3)",
             }}
           >
             {node.icon}
           </div>
           <div className="flex-1">
             <p
-              className="text-sm font-semibold"
+              className="text-base font-bold"
               style={{
-                color: "#e0e8f0",
+                color: "#f0f8ff",
                 fontFamily: "'Inter', sans-serif",
+                textShadow: "0 1px 2px rgba(0, 0, 0, 0.5)",
               }}
             >
               {node.title}
             </p>
-            <p className="text-xs" style={{ color: "#8a9fb5" }}>
+            <p className="text-xs font-medium" style={{ color: "#9dd5c0" }}>
               Avail Nexus Bridge
             </p>
           </div>
@@ -162,13 +163,13 @@ export default function AvailBridgeNode({
           <div className="mt-3 space-y-3" onClick={(e) => e.stopPropagation()}>
             {/* Info */}
             <div
-              className="px-3 py-2 rounded"
+              className="px-3 py-2.5 rounded-lg"
               style={{
-                background: "rgba(100, 150, 200, 0.2)",
-                border: "1px solid rgba(100, 150, 200, 0.3)",
+                background: "rgba(100, 180, 220, 0.15)",
+                border: "1px solid rgba(100, 220, 180, 0.4)",
               }}
             >
-              <p className="text-[10px]" style={{ color: "#a0b8d0" }}>
+              <p className="text-xs font-medium" style={{ color: "#a8e6cf" }}>
                 💡 Source: Auto-detected from your connected wallet (Sepolia)
               </p>
             </div>
@@ -176,8 +177,8 @@ export default function AvailBridgeNode({
             {/* Destination Chain */}
             <div>
               <label
-                className="text-xs font-medium"
-                style={{ color: "#8a9fb5" }}
+                className="text-sm font-bold mb-1 block"
+                style={{ color: "#d0f0e0" }}
               >
                 Destination Chain
               </label>
@@ -186,21 +187,30 @@ export default function AvailBridgeNode({
                 onChange={(e) =>
                   handleInputChange("targetChain", e.target.value)
                 }
-                className="w-full px-2 py-1.5 rounded text-xs mt-1"
+                className="w-full px-3 py-2 rounded-lg text-sm font-medium"
                 style={{
-                  background: "rgba(0, 0, 0, 0.3)",
-                  border: "1px solid rgba(150, 220, 180, 0.3)",
-                  color: "#e0e8f0",
+                  background: "rgba(0, 0, 0, 0.4)",
+                  border: "2px solid rgba(100, 220, 180, 0.4)",
+                  color: "#f0f8ff",
                 }}
               >
-                <option value="">Select destination...</option>
+                <option value="" style={{ background: "#1a1f2e" }}>
+                  Select destination...
+                </option>
                 {destinationChains.map((chain) => (
-                  <option key={chain} value={chain}>
+                  <option
+                    key={chain}
+                    value={chain}
+                    style={{ background: "#1a1f2e" }}
+                  >
                     {SUPPORTED_CHAINS[chain]?.name || chain}
                   </option>
                 ))}
               </select>
-              <p className="text-[10px] mt-1" style={{ color: "#6a8fb5" }}>
+              <p
+                className="text-xs mt-1.5 font-medium"
+                style={{ color: "#8dd3bb" }}
+              >
                 ⏱️ Bridge takes 10-15 minutes to complete
               </p>
             </div>
@@ -208,24 +218,30 @@ export default function AvailBridgeNode({
             {/* Token */}
             <div>
               <label
-                className="text-xs font-medium"
-                style={{ color: "#8a9fb5" }}
+                className="text-sm font-bold mb-1 block"
+                style={{ color: "#d0f0e0" }}
               >
                 Token
               </label>
               <select
                 value={node.inputs?.token || ""}
                 onChange={(e) => handleInputChange("token", e.target.value)}
-                className="w-full px-2 py-1.5 rounded text-xs mt-1"
+                className="w-full px-3 py-2 rounded-lg text-sm font-medium"
                 style={{
-                  background: "rgba(0, 0, 0, 0.3)",
-                  border: "1px solid rgba(150, 220, 180, 0.3)",
-                  color: "#e0e8f0",
+                  background: "rgba(0, 0, 0, 0.4)",
+                  border: "2px solid rgba(100, 220, 180, 0.4)",
+                  color: "#f0f8ff",
                 }}
               >
-                <option value="">Select token...</option>
+                <option value="" style={{ background: "#1a1f2e" }}>
+                  Select token...
+                </option>
                 {tokens.map((token) => (
-                  <option key={token} value={token}>
+                  <option
+                    key={token}
+                    value={token}
+                    style={{ background: "#1a1f2e" }}
+                  >
                     {token}
                   </option>
                 ))}
@@ -235,8 +251,8 @@ export default function AvailBridgeNode({
             {/* Amount */}
             <div>
               <label
-                className="text-xs font-medium"
-                style={{ color: "#8a9fb5" }}
+                className="text-sm font-bold mb-1 block"
+                style={{ color: "#d0f0e0" }}
               >
                 Amount
               </label>
@@ -245,14 +261,17 @@ export default function AvailBridgeNode({
                 value={node.inputs?.amount || ""}
                 onChange={(e) => handleInputChange("amount", e.target.value)}
                 placeholder="e.g., 0.01"
-                className="w-full px-2 py-1.5 rounded text-xs mt-1"
+                className="w-full px-3 py-2 rounded-lg text-sm font-medium"
                 style={{
-                  background: "rgba(0, 0, 0, 0.3)",
-                  border: "1px solid rgba(150, 220, 180, 0.3)",
-                  color: "#e0e8f0",
+                  background: "rgba(0, 0, 0, 0.4)",
+                  border: "2px solid rgba(100, 220, 180, 0.4)",
+                  color: "#f0f8ff",
                 }}
               />
-              <p className="text-[10px] mt-1" style={{ color: "#6a8fb5" }}>
+              <p
+                className="text-xs mt-1.5 font-medium"
+                style={{ color: "#8dd3bb" }}
+              >
                 💡 Tokens will be sent to your connected wallet on the
                 destination chain
               </p>
@@ -262,8 +281,13 @@ export default function AvailBridgeNode({
 
         {/* Summary when collapsed */}
         {!isExpanded && node.inputs?.targetChain && (
-          <div className="mt-2 text-xs" style={{ color: "#8a9fb5" }}>
-            Sepolia → {node.inputs.targetChain}
+          <div
+            className="mt-3 text-sm font-semibold"
+            style={{ color: "#a8e6cf" }}
+          >
+            Sepolia →{" "}
+            {SUPPORTED_CHAINS[node.inputs.targetChain]?.name ||
+              node.inputs.targetChain}
             {node.inputs.amount &&
               node.inputs.token &&
               ` | ${node.inputs.amount} ${node.inputs.token}`}

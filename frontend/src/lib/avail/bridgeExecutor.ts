@@ -171,13 +171,23 @@ export async function executeBridge(
 ): Promise<BridgeResult> {
   try {
     const nexusClient = getNexusClient();
-    const sourceChainConfig = getChainConfig(params.sourceChain);
     const targetChainConfig = getChainConfig(params.targetChain);
 
-    // Validate: Cannot bridge to same chain
-    if (sourceChainConfig.chainId === targetChainConfig.chainId) {
+    // Validate amount
+    const amountNum = parseFloat(params.amount);
+    if (isNaN(amountNum) || amountNum <= 0) {
       throw new Error(
-        `Cannot bridge from ${sourceChainConfig.name} to itself! Please select a different destination chain.`
+        `Invalid amount: ${params.amount}. Please enter a valid positive number.`
+      );
+    }
+
+    // Validate token
+    const validTokens = ["ETH", "USDC", "USDT"];
+    if (!validTokens.includes(params.token)) {
+      throw new Error(
+        `Invalid token: ${params.token}. Supported tokens: ${validTokens.join(
+          ", "
+        )}`
       );
     }
 
@@ -189,11 +199,7 @@ export async function executeBridge(
     }
 
     console.log("🌉 Initiating bridge transaction:");
-    console.log(
-      "  • From:",
-      sourceChainConfig.name,
-      `(Chain ID: ${sourceChainConfig.chainId})`
-    );
+    console.log("  • From:", "Auto-detected from your connected wallet");
     console.log(
       "  • To:",
       targetChainConfig.name,
@@ -213,17 +219,20 @@ export async function executeBridge(
     }
 
     console.log("📝 Preparing bridge transaction...");
-    console.log("⚠️ SDK will handle network switching automatically");
+    console.log("⚠️ SDK will auto-detect your current chain as the source");
+    console.log(
+      "⚠️ Make sure you're connected to the source chain in your wallet"
+    );
     console.log("⚠️ Cross-chain bridges take 5-15 minutes to complete");
     console.log("ℹ️ Check your MetaMask for pending approval requests");
 
     // Use Nexus SDK to execute the bridge
-    // Note: SDK auto-detects source chain from connected wallet
-    // Only need to specify destination chain
+    // IMPORTANT: SDK auto-detects source chain from connected wallet
+    // We only specify the DESTINATION chain, token, and amount
     const bridgeResult = await nexusClient.bridge({
+      chainId: targetChainConfig.chainId as any, // Destination chain ID
       token: params.token as any, // ETH, USDC, or USDT
       amount: params.amount,
-      chainId: targetChainConfig.chainId as any, // Destination chain
     });
 
     console.log("✅ Bridge transaction result:", bridgeResult);
@@ -265,9 +274,9 @@ export async function executeBridge(
     return {
       success: true,
       txHash: txHash,
-      message: `Bridge initiated: ${params.amount} ${params.token} from ${
-        sourceChainConfig.name
-      } to ${targetChainConfig.name}. ${
+      message: `Bridge initiated: ${params.amount} ${
+        params.token
+      } from your connected chain to ${targetChainConfig.name}. ${
         bridgeResult.explorerUrl ? `Track: ${bridgeResult.explorerUrl}` : ""
       }`,
     };
@@ -297,15 +306,18 @@ export async function executeBridgeAndExecute(
 ): Promise<BridgeResult> {
   try {
     const nexusClient = getNexusClient();
-    const sourceChainConfig = getChainConfig(params.sourceChain);
     const targetChainConfig = getChainConfig(params.targetChain);
 
+    // Validate amount
+    const amountNum = parseFloat(params.amount);
+    if (isNaN(amountNum) || amountNum <= 0) {
+      throw new Error(
+        `Invalid amount: ${params.amount}. Please enter a valid positive number.`
+      );
+    }
+
     console.log("🚀 Initiating Bridge & Execute transaction:");
-    console.log(
-      "  • From:",
-      sourceChainConfig.name,
-      `(Chain ID: ${sourceChainConfig.chainId})`
-    );
+    console.log("  • From:", "Auto-detected from your connected wallet");
     console.log(
       "  • To:",
       targetChainConfig.name,

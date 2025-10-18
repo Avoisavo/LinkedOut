@@ -75,10 +75,17 @@ export async function executeAvailWorkflow(
       );
 
       try {
-        // Get the ethereum provider from walletClient
-        const provider = await walletClient.transport;
-        await initializeNexusClient(provider);
-        console.log("✅ Nexus SDK initialized successfully!");
+        // Use window.ethereum directly for better network switching support
+        // This ensures the SDK always sees the current network state
+        if (typeof window !== "undefined" && (window as any).ethereum) {
+          const provider = (window as any).ethereum;
+          await initializeNexusClient(provider);
+          console.log("✅ Nexus SDK initialized successfully!");
+        } else {
+          throw new Error(
+            "MetaMask or compatible wallet not found. Please install MetaMask."
+          );
+        }
       } catch (error) {
         if (error instanceof Error && error.message.includes("User rejected")) {
           throw new Error(
@@ -86,6 +93,21 @@ export async function executeAvailWorkflow(
           );
         }
         throw error;
+      }
+    }
+
+    // Log the current chain before executing
+    if (typeof window !== "undefined" && (window as any).ethereum) {
+      try {
+        const currentChainId = await (window as any).ethereum.request({
+          method: "eth_chainId",
+        });
+        console.log(
+          "✅ Executing from chain ID:",
+          parseInt(currentChainId, 16)
+        );
+      } catch (e) {
+        console.warn("Could not detect current chain");
       }
     }
 
@@ -238,13 +260,14 @@ async function executeAvailBridgeNode(node: any) {
     token,
     amount,
   });
+  console.log("ℹ️ Source chain: Auto-detected from your connected wallet");
   console.log(
     "ℹ️ Tokens will be sent to your connected wallet on the destination chain"
   );
 
-  // Source chain is auto-detected from connected wallet
+  // Source chain is auto-detected from connected wallet by the SDK
   const result = await executeBridge({
-    sourceChain: "sepolia", // This will be auto-detected by SDK
+    sourceChain: targetChain, // Placeholder - SDK ignores this and auto-detects
     targetChain,
     token,
     amount,
@@ -288,6 +311,7 @@ async function executeAvailBridgeExecuteNode(node: any) {
     executeContract,
     executeFunction,
   });
+  console.log("ℹ️ Source chain: Auto-detected from your connected wallet");
 
   // Parse function parameters if provided
   let parsedParams;
@@ -299,8 +323,9 @@ async function executeAvailBridgeExecuteNode(node: any) {
     throw new Error("Invalid function parameters JSON");
   }
 
+  // Source chain is auto-detected from connected wallet by the SDK
   const result = await executeBridgeAndExecute({
-    sourceChain: "sepolia", // Auto-detected
+    sourceChain: targetChain, // Placeholder - SDK ignores this and auto-detects
     targetChain,
     token,
     amount,

@@ -56,6 +56,15 @@ export async function initializeNexusClient(provider: any): Promise<NexusSDK> {
   // If already initialized, return existing instance
   if (nexusClientInstance && isNexusClientInitialized()) {
     console.log("✅ Nexus SDK already initialized");
+
+    // Log current chain to help debug
+    try {
+      const chainId = await provider.request({ method: "eth_chainId" });
+      console.log("ℹ️ Current wallet chain ID:", parseInt(chainId, 16));
+    } catch (e) {
+      console.warn("Could not detect current chain");
+    }
+
     return nexusClientInstance;
   }
 
@@ -84,7 +93,12 @@ export async function initializeNexusClient(provider: any): Promise<NexusSDK> {
     if (accounts.length === 0) {
       throw new Error("No wallet connected. Please connect your wallet first.");
     }
+
+    // Get current chain ID
+    const chainId = await provider.request({ method: "eth_chainId" });
+    const currentChainId = parseInt(chainId, 16);
     console.log("✅ Using connected wallet:", accounts[0]);
+    console.log("ℹ️ Current chain ID:", currentChainId);
 
     // Create Nexus SDK instance
     // NOTE: SDK will handle network switching automatically when bridging
