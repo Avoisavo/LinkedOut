@@ -251,8 +251,21 @@ export async function executeAvailWorkflow(
 async function executeAvailBridgeNode(node: any) {
   const { targetChain, token, amount } = node.inputs || {};
 
-  if (!targetChain || !token || !amount) {
-    throw new Error("Missing required bridge parameters");
+  // Validate required parameters with specific error messages
+  if (!targetChain) {
+    throw new Error(
+      "Missing destination chain. Please select a destination chain in the Avail Bridge node configuration."
+    );
+  }
+  if (!token) {
+    throw new Error(
+      "Missing token. Please select a token (ETH, USDC, or USDT) in the Avail Bridge node configuration."
+    );
+  }
+  if (!amount) {
+    throw new Error(
+      "Missing amount. Please enter an amount in the Avail Bridge node configuration."
+    );
   }
 
   console.log("🌉 Executing Avail Bridge:", {
@@ -294,14 +307,31 @@ async function executeAvailBridgeExecuteNode(node: any) {
     executeValue,
   } = node.inputs || {};
 
-  if (
-    !targetChain ||
-    !token ||
-    !amount ||
-    !executeContract ||
-    !executeFunction
-  ) {
-    throw new Error("Missing required bridge & execute parameters");
+  // Validate required parameters with specific error messages
+  if (!targetChain) {
+    throw new Error(
+      "Missing destination chain. Please select a destination chain in the Bridge & Execute node configuration."
+    );
+  }
+  if (!token) {
+    throw new Error(
+      "Missing token. Please select a token (ETH, USDC, or USDT) in the Bridge & Execute node configuration."
+    );
+  }
+  if (!amount) {
+    throw new Error(
+      "Missing amount. Please enter an amount in the Bridge & Execute node configuration."
+    );
+  }
+  if (!executeContract) {
+    throw new Error(
+      "Missing contract address. Please enter the contract address in the Bridge & Execute node configuration."
+    );
+  }
+  if (!executeFunction) {
+    throw new Error(
+      "Missing function name. Please enter the function name in the Bridge & Execute node configuration."
+    );
   }
 
   console.log("🚀 Executing Avail Bridge & Execute:", {

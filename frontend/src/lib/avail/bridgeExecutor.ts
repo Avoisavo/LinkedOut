@@ -1,4 +1,8 @@
-import { getNexusClient, getChainConfig, ChainConfig } from "./nexusClient";
+import {
+  getNexusClient,
+  getChainConfig,
+  SUPPORTED_CHAINS,
+} from "./nexusClient";
 
 // Common Contract ABIs
 const WETH_ABI = [
@@ -73,6 +77,7 @@ const AAVE_POOL_ABI = [
 ];
 
 // Contract address to ABI mapping
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const CONTRACT_ABI_MAP: Record<string, any[]> = {
   // WETH on Base Sepolia
   "0x4200000000000000000000000000000000000006": WETH_ABI,
@@ -87,147 +92,10 @@ const CONTRACT_ABI_MAP: Record<string, any[]> = {
 /**
  * Get ABI for a known contract address, or return empty array
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function getContractABI(contractAddress: string): any[] {
   const normalizedAddress = contractAddress.toLowerCase();
   return CONTRACT_ABI_MAP[normalizedAddress] || [];
-}
-
-/**
- * Ensure a network is added to MetaMask before bridging
- */
-async function ensureNetworkAdded(chainConfig: ChainConfig): Promise<void> {
-  if (typeof window === "undefined" || !(window as any).ethereum) {
-    return;
-  }
-
-  const provider = (window as any).ethereum;
-  const chainIdHex = `0x${chainConfig.chainId.toString(16)}`;
-
-  try {
-    // Try to switch to the network first (if it exists)
-    await provider.request({
-      method: "wallet_switchEthereumChain",
-      params: [{ chainId: chainIdHex }],
-    });
-    console.log(`✅ Switched to ${chainConfig.name}`);
-  } catch (switchError: any) {
-    // If network doesn't exist (error code 4902), add it
-    if (switchError.code === 4902) {
-      try {
-        console.log(`➕ Adding ${chainConfig.name} to MetaMask...`);
-
-        // Get proper network configuration based on chain
-        const networkConfig = getNetworkConfig(chainConfig);
-
-        await provider.request({
-          method: "wallet_addEthereumChain",
-          params: [networkConfig],
-        });
-        console.log(`✅ Added ${chainConfig.name} to MetaMask`);
-      } catch (addError) {
-        console.error(`❌ Failed to add ${chainConfig.name}:`, addError);
-        throw new Error(
-          `Please add ${chainConfig.name} to MetaMask manually to continue`
-        );
-      }
-    } else {
-      // User rejected or other error
-      console.warn(`⚠️ Could not switch to ${chainConfig.name}:`, switchError);
-      // Don't throw - SDK might handle this
-    }
-  }
-}
-
-/**
- * Get proper network configuration for MetaMask
- */
-function getNetworkConfig(chainConfig: ChainConfig) {
-  const chainIdHex = `0x${chainConfig.chainId.toString(16)}`;
-
-  // Return proper configuration based on chain
-  switch (chainConfig.chainId) {
-    case 11155111: // Sepolia
-      return {
-        chainId: chainIdHex,
-        chainName: "Sepolia Testnet",
-        nativeCurrency: {
-          name: "Sepolia ETH",
-          symbol: "ETH",
-          decimals: 18,
-        },
-        rpcUrls: [
-          "https://rpc.sepolia.org",
-          "https://ethereum-sepolia-rpc.publicnode.com",
-        ],
-        blockExplorerUrls: ["https://sepolia.etherscan.io"],
-      };
-
-    case 84532: // Base Sepolia
-      return {
-        chainId: chainIdHex,
-        chainName: "Base Sepolia",
-        nativeCurrency: {
-          name: "Sepolia Ether",
-          symbol: "ETH",
-          decimals: 18,
-        },
-        rpcUrls: ["https://sepolia.base.org"],
-        blockExplorerUrls: ["https://sepolia.basescan.org"],
-      };
-
-    case 80002: // Polygon Amoy
-      return {
-        chainId: chainIdHex,
-        chainName: "Polygon Amoy Testnet",
-        nativeCurrency: {
-          name: "MATIC",
-          symbol: "MATIC",
-          decimals: 18,
-        },
-        rpcUrls: ["https://rpc-amoy.polygon.technology"],
-        blockExplorerUrls: ["https://amoy.polygonscan.com"],
-      };
-
-    case 421614: // Arbitrum Sepolia
-      return {
-        chainId: chainIdHex,
-        chainName: "Arbitrum Sepolia",
-        nativeCurrency: {
-          name: "Sepolia Ether",
-          symbol: "ETH",
-          decimals: 18,
-        },
-        rpcUrls: ["https://sepolia-rollup.arbitrum.io/rpc"],
-        blockExplorerUrls: ["https://sepolia.arbiscan.io"],
-      };
-
-    case 11155420: // Optimism Sepolia
-      return {
-        chainId: chainIdHex,
-        chainName: "Optimism Sepolia",
-        nativeCurrency: {
-          name: "Sepolia Ether",
-          symbol: "ETH",
-          decimals: 18,
-        },
-        rpcUrls: ["https://sepolia.optimism.io"],
-        blockExplorerUrls: ["https://sepolia-optimism.etherscan.io"],
-      };
-
-    default:
-      // Fallback configuration
-      return {
-        chainId: chainIdHex,
-        chainName: chainConfig.name,
-        nativeCurrency: {
-          name: "ETH",
-          symbol: "ETH",
-          decimals: 18,
-        },
-        rpcUrls: [chainConfig.rpcUrl],
-        blockExplorerUrls: [],
-      };
-  }
 }
 
 export interface BridgeParams {
@@ -244,6 +112,7 @@ export interface BridgeAndExecuteParams extends BridgeParams {
   recipientAddress?: string; // For bridgeAndExecute, custom recipient is supported
   executeContract: string;
   executeFunction: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   executeFunctionParams?: any[];
   executeValue?: string;
 }
@@ -253,6 +122,30 @@ export interface BridgeResult {
   txHash?: string;
   error?: string;
   message?: string;
+}
+
+// Type for Ethereum provider
+interface EthereumProvider {
+  request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
+}
+
+/**
+ * Get current chain ID from MetaMask
+ */
+async function getCurrentChainId(): Promise<number> {
+  if (
+    typeof window === "undefined" ||
+    !(window as unknown as { ethereum?: EthereumProvider }).ethereum
+  ) {
+    throw new Error("MetaMask not available");
+  }
+
+  const ethereum = (window as unknown as { ethereum: EthereumProvider })
+    .ethereum;
+  const chainIdHex = (await ethereum.request({
+    method: "eth_chainId",
+  })) as string;
+  return parseInt(chainIdHex, 16);
 }
 
 /**
@@ -283,15 +176,19 @@ export async function executeBridge(
       );
     }
 
-    // Validate: Sepolia cannot be a destination (only source)
-    if (targetChainConfig.chainId === 11155111) {
-      throw new Error(
-        `Ethereum Sepolia cannot be a bridge destination. Bridge FROM Sepolia TO other chains (Base, Polygon, Arbitrum, Optimism).`
-      );
-    }
+    // The SDK will use whatever chain you're currently on as the source
+    const currentChainId = await getCurrentChainId();
+    const sourceChainName =
+      Object.entries(SUPPORTED_CHAINS).find(
+        ([, config]) => config.chainId === currentChainId
+      )?.[1]?.name || `Chain ${currentChainId}`;
 
     console.log("🌉 Initiating bridge transaction:");
-    console.log("  • From:", "Auto-detected from your connected wallet");
+    console.log(
+      "  • From:",
+      sourceChainName,
+      `(Chain ID: ${currentChainId}) - Auto-detected from your wallet`
+    );
     console.log(
       "  • To:",
       targetChainConfig.name,
@@ -303,6 +200,13 @@ export async function executeBridge(
       "  • Recipient: Your connected wallet (same address on destination chain)"
     );
 
+    // Validate: Cannot bridge to the same chain
+    if (currentChainId === targetChainConfig.chainId) {
+      throw new Error(
+        `Cannot bridge to the same chain. You are currently on ${sourceChainName}. Please select a different destination chain.`
+      );
+    }
+
     // Check if Nexus SDK has the bridge method
     if (typeof nexusClient.bridge !== "function") {
       throw new Error(
@@ -311,21 +215,48 @@ export async function executeBridge(
     }
 
     console.log("📝 Preparing bridge transaction...");
-    console.log("⚠️ SDK will auto-detect your current chain as the source");
+    console.log("✅ Source network detected:", sourceChainName);
     console.log(
-      "⚠️ Make sure you're connected to the source chain in your wallet"
+      "ℹ️ The SDK will automatically handle any routing needed for the bridge"
+    );
+    console.log(
+      "⚠️ Note: You may be prompted to approve network switches for optimal routing"
     );
     console.log("⚠️ Cross-chain bridges take 5-15 minutes to complete");
     console.log("ℹ️ Check your MetaMask for pending approval requests");
 
+    // Store the original chain ID to detect if SDK switches networks
+    const originalChainId = currentChainId;
+
     // Use Nexus SDK to execute the bridge
     // IMPORTANT: SDK auto-detects source chain from connected wallet
-    // We only specify the DESTINATION chain, token, and amount
+    // NOTE: The SDK may automatically switch networks if the current network
+    // is not an optimal source for the selected destination
     const bridgeResult = await nexusClient.bridge({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       chainId: targetChainConfig.chainId as any, // Destination chain ID
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       token: params.token as any, // ETH, USDC, or USDT
       amount: params.amount,
     });
+
+    // Check if network was switched during bridge
+    const finalChainId = await getCurrentChainId();
+    if (finalChainId !== originalChainId) {
+      const finalChainName =
+        Object.entries(SUPPORTED_CHAINS).find(
+          ([, config]) => config.chainId === finalChainId
+        )?.[1]?.name || `Chain ${finalChainId}`;
+      console.log(
+        `ℹ️ Network switched for routing: ${sourceChainName} → ${finalChainName}`
+      );
+      console.log(
+        `ℹ️ This is expected - the SDK automatically routes through the optimal path`
+      );
+      console.log(
+        `ℹ️ Your tokens will still arrive at ${targetChainConfig.name} as intended`
+      );
+    }
 
     console.log("✅ Bridge transaction result:", bridgeResult);
 
@@ -408,8 +339,19 @@ export async function executeBridgeAndExecute(
       );
     }
 
+    // The SDK will use whatever chain you're currently on as the source
+    const currentChainId = await getCurrentChainId();
+    const sourceChainName =
+      Object.entries(SUPPORTED_CHAINS).find(
+        ([, config]) => config.chainId === currentChainId
+      )?.[1]?.name || `Chain ${currentChainId}`;
+
     console.log("🚀 Initiating Bridge & Execute transaction:");
-    console.log("  • From:", "Auto-detected from your connected wallet");
+    console.log(
+      "  • From:",
+      sourceChainName,
+      `(Chain ID: ${currentChainId}) - Auto-detected from your wallet`
+    );
     console.log(
       "  • To:",
       targetChainConfig.name,
@@ -420,6 +362,13 @@ export async function executeBridgeAndExecute(
     console.log("  • Contract:", params.executeContract);
     console.log("  • Function:", params.executeFunction);
 
+    // Validate: Cannot bridge to the same chain
+    if (currentChainId === targetChainConfig.chainId) {
+      throw new Error(
+        `Cannot bridge to the same chain. You are currently on ${sourceChainName}. Please select a different destination chain.`
+      );
+    }
+
     // Check if Nexus SDK has the bridgeAndExecute method
     if (typeof nexusClient.bridgeAndExecute !== "function") {
       throw new Error(
@@ -428,16 +377,27 @@ export async function executeBridgeAndExecute(
     }
 
     // Parse function parameters if provided
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let parsedParams: any[];
     try {
       parsedParams = params.executeFunctionParams || [];
-    } catch (error) {
+    } catch {
       throw new Error("Invalid function parameters");
     }
 
     console.log(
       "📝 Preparing bridge & execute transaction (MetaMask will prompt for signature)..."
     );
+    console.log("✅ Source network detected:", sourceChainName);
+    console.log(
+      "ℹ️ The SDK will automatically handle any routing needed for the bridge"
+    );
+    console.log(
+      "⚠️ Note: You may be prompted to approve network switches for optimal routing"
+    );
+
+    // Store the original chain ID to detect if SDK switches networks
+    const originalChainId = currentChainId;
 
     // Get contract ABI for known contracts
     const contractAbi = getContractABI(params.executeContract);
@@ -461,15 +421,18 @@ export async function executeBridgeAndExecute(
 
     // Use Nexus SDK bridgeAndExecute
     const result = await nexusClient.bridgeAndExecute({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       toChainId: targetChainConfig.chainId as any, // Destination chain
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       token: params.token as any, // ETH, USDC, or USDT
       amount: params.amount,
       recipient: params.recipientAddress as `0x${string}`,
       execute: {
         contractAddress: params.executeContract,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         contractAbi: contractAbi as any,
         functionName: params.executeFunction,
-        buildFunctionParams: (token, amount, chainId, userAddress) => ({
+        buildFunctionParams: () => ({
           functionParams: parsedParams,
           value: params.executeValue || "0",
         }),
@@ -478,13 +441,31 @@ export async function executeBridgeAndExecute(
         tokenApproval:
           params.token !== "ETH"
             ? {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 token: params.token as any,
                 amount: params.amount,
-                chainId: targetChainConfig.chainId as any,
               }
             : undefined,
       },
     });
+
+    // Check if network was switched during bridge & execute
+    const finalChainId = await getCurrentChainId();
+    if (finalChainId !== originalChainId) {
+      const finalChainName =
+        Object.entries(SUPPORTED_CHAINS).find(
+          ([, config]) => config.chainId === finalChainId
+        )?.[1]?.name || `Chain ${finalChainId}`;
+      console.log(
+        `ℹ️ Network switched for routing: ${sourceChainName} → ${finalChainName}`
+      );
+      console.log(
+        `ℹ️ This is expected - the SDK automatically routes through the optimal path`
+      );
+      console.log(
+        `ℹ️ Your tokens and execution will complete on ${targetChainConfig.name} as intended`
+      );
+    }
 
     console.log("✅ Bridge & Execute result:", result);
 
@@ -525,55 +506,6 @@ export async function executeBridgeAndExecute(
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
       message: "Bridge & Execute operation failed. Check console for details.",
-    };
-  }
-}
-
-/**
- * Encode function call for contract execution
- * This is a simplified version - you may need ethers.js or viem for proper encoding
- */
-function encodeFunctionCall(functionName: string, params: any[]): string {
-  // In a real implementation, use ethers.Interface or viem's encodeFunctionData
-  // For now, this is a placeholder
-  console.log(`Encoding function call: ${functionName}`, params);
-
-  // This should be properly implemented based on the contract ABI
-  // Example with ethers.js:
-  // const iface = new ethers.Interface(['function deposit(uint256 amount)']);
-  // return iface.encodeFunctionData('deposit', [amount]);
-
-  return "0x"; // Placeholder
-}
-
-/**
- * Wait for bridge confirmation on destination chain
- * Note: This functionality may not be available in current SDK version
- */
-export async function waitForBridgeCompletion(
-  txHash: string,
-  targetChain: string,
-  timeoutMs: number = 300000 // 5 minutes default
-): Promise<{ completed: boolean; error?: string }> {
-  try {
-    console.log(`⏳ Waiting for bridge completion... (txHash: ${txHash})`);
-
-    // Note: waitForBridgeCompletion may not be available in SDK v0.0.1
-    // You would need to poll the transaction status manually or use a block explorer API
-
-    console.warn(
-      "⚠️ Bridge monitoring not implemented - check transaction on block explorer"
-    );
-
-    return {
-      completed: false,
-      error: "Bridge monitoring not available in current SDK version",
-    };
-  } catch (error) {
-    console.error("❌ Bridge monitoring failed:", error);
-    return {
-      completed: false,
-      error: error instanceof Error ? error.message : "Unknown error",
     };
   }
 }

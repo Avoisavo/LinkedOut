@@ -38,8 +38,11 @@ export default function AvailBridgeExecuteNode({
   const [isExpanded, setIsExpanded] = useState(false);
   const supportedChains = getSupportedChainNames();
 
+  // All supported chains except Sepolia are available as destinations
+  // Sepolia is typically used as a hub/source chain in testnet
+  // Source chain is auto-detected from your connected wallet
   const destinationChains = supportedChains.filter(
-    (chain) => chain !== "sepolia"
+    (chain) => chain.toLowerCase() !== "sepolia"
   );
 
   const tokens = ["ETH", "USDC", "USDT"];
@@ -182,8 +185,7 @@ export default function AvailBridgeExecuteNode({
                     className="text-xs font-medium"
                     style={{ color: "#d8c9e6" }}
                   >
-                    💡 Source: Auto-detected from your connected wallet
-                    (Sepolia)
+                    💡 Source: Auto-detected from your current wallet network
                   </p>
                 </div>
 
