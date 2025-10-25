@@ -5,7 +5,9 @@ import { initializeDatabase } from "./db/database.js";
 import workflowRoutes from "./routes/workflows.js";
 import templateRoutes from "./routes/templates.js";
 import executionRoutes from "./routes/executions.js";
+import agentRoutes, { initializeAgentSystem } from "./routes/agents.js";
 import { Template } from "./models/Template.js";
+import { AgentSystem } from "./hedera-kit/agent-system.js";
 
 // Load environment variables
 dotenv.config();
@@ -29,14 +31,44 @@ initializeDatabase();
 // Seed default templates
 seedTemplates();
 
+// Initialize Hedera Agent System (optional - can be started via API)
+let agentSystem = null;
+const AUTO_START_AGENTS = process.env.AUTO_START_AGENTS === "true";
+
+async function initAgents() {
+  try {
+    agentSystem = new AgentSystem();
+    await agentSystem.initialize();
+    initializeAgentSystem(agentSystem);
+
+    if (AUTO_START_AGENTS) {
+      await agentSystem.start();
+    } else {
+      console.log(
+        "💤 Agent system initialized but not started (use POST /api/agents/start)"
+      );
+    }
+  } catch (error) {
+    console.error("⚠️  Failed to initialize agent system:", error.message);
+    console.log("   Agents will not be available");
+  }
+}
+
+initAgents();
+
 // Routes
 app.use("/api/workflows", workflowRoutes);
 app.use("/api/templates", templateRoutes);
 app.use("/api/executions", executionRoutes);
+app.use("/api/agents", agentRoutes);
 
 // Health check
 app.get("/health", (req, res) => {
-  res.json({ status: "ok", timestamp: new Date().toISOString() });
+  res.json({
+    status: "ok",
+    timestamp: new Date().toISOString(),
+    agents: agentSystem?.getStatus() || { isRunning: false },
+  });
 });
 
 // Error handling
@@ -137,6 +169,49 @@ function seedTemplates() {
       ],
       connections: [{ from: "trigger-1", to: "avail-bridge-1" }],
       tags: ["avail", "crosschain", "bridge"],
+      featured: true,
+      createdBy: "system",
+    });
+
+    // Hedera Agent Workflow Template
+    Template.create({
+      name: "Hedera AI Agent Bridge",
+      description:
+        "Telegram → AI Decision → Bridge workflow using Hedera Agent Kit with A2A communication",
+      category: "hedera",
+      nodes: [
+        {
+          id: "trigger-1",
+          type: "trigger",
+          title: "Manual Trigger",
+          icon: "⚡",
+          position: { x: 400, y: 100 },
+          inputs: {},
+        },
+        {
+          id: "hedera-agent-1",
+          type: "hedera-agent",
+          title: "Hedera Agent System",
+          icon: "🤖",
+          position: { x: 400, y: 250 },
+          inputs: {
+            chatId: "workflow-demo",
+          },
+        },
+        {
+          id: "notify-1",
+          type: "notification",
+          title: "Send Notification",
+          icon: "📧",
+          position: { x: 400, y: 400 },
+          inputs: {},
+        },
+      ],
+      connections: [
+        { from: "trigger-1", to: "hedera-agent-1" },
+        { from: "hedera-agent-1", to: "notify-1" },
+      ],
+      tags: ["hedera", "agent", "ai", "a2a", "bridge"],
       featured: true,
       createdBy: "system",
     });

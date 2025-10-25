@@ -14,6 +14,9 @@ export const AgentId = {
   BUYER: "agent://buyer",
   SELLER: "agent://seller",
   PAYMENT: "agent://payment",
+  TELEGRAM: "agent://telegram",
+  AI_DECISION: "agent://ai-decision",
+  BRIDGE_EXECUTOR: "agent://bridge-executor",
   BROADCAST: "broadcast",
 };
 
@@ -30,6 +33,14 @@ export const MessageType = {
   // Payment messages (AP2 - Agent Payment Protocol)
   PAYMENT_REQ: "PAYMENT_REQ",
   PAYMENT_ACK: "PAYMENT_ACK",
+
+  // Workflow messages (Telegram → AI → Bridge flow)
+  TELEGRAM_MSG: "TELEGRAM_MSG",
+  AI_DECISION_REQ: "AI_DECISION_REQ",
+  AI_DECISION_RESP: "AI_DECISION_RESP",
+  BRIDGE_EXEC_REQ: "BRIDGE_EXEC_REQ",
+  BRIDGE_EXEC_RESP: "BRIDGE_EXEC_RESP",
+  NOTIFY: "NOTIFY",
 
   // Error handling
   ERROR: "ERROR",
@@ -256,14 +267,14 @@ export function validateMessage(message) {
     errors.push(`Invalid message type: ${message.type}`);
   }
 
-  // Validate agent IDs
-  const validAgentIds = Object.values(AgentId);
-  if (message.from && !validAgentIds.includes(message.from)) {
-    errors.push(`Invalid from agent ID: ${message.from}`);
-  }
-  if (message.to && !validAgentIds.includes(message.to)) {
-    errors.push(`Invalid to agent ID: ${message.to}`);
-  }
+  // Validate agent IDs (optional - allow flexible agent IDs)
+  // const validAgentIds = Object.values(AgentId);
+  // if (message.from && !validAgentIds.includes(message.from)) {
+  //   errors.push(`Invalid from agent ID: ${message.from}`);
+  // }
+  // if (message.to && !validAgentIds.includes(message.to)) {
+  //   errors.push(`Invalid to agent ID: ${message.to}`);
+  // }
 
   return {
     valid: errors.length === 0,
@@ -470,6 +481,112 @@ export function createErrorMessage(
     to,
     type: MessageType.ERROR,
     payload: { code, message, originalMessageId },
+    correlationId,
+  });
+}
+
+// Workflow message helpers
+export function createTelegramMessage(
+  from,
+  to,
+  text,
+  chatId,
+  userId,
+  correlationId
+) {
+  return createMessage({
+    from,
+    to,
+    type: MessageType.TELEGRAM_MSG,
+    payload: { text, chatId, userId, timestamp: new Date().toISOString() },
+    correlationId,
+  });
+}
+
+export function createAIDecisionRequest(
+  from,
+  to,
+  userRequest,
+  context,
+  correlationId
+) {
+  return createMessage({
+    from,
+    to,
+    type: MessageType.AI_DECISION_REQ,
+    payload: { userRequest, context },
+    correlationId,
+  });
+}
+
+export function createAIDecisionResponse(
+  from,
+  to,
+  decision,
+  shouldExecuteBridge,
+  reasoning,
+  bridgeParams,
+  correlationId
+) {
+  return createMessage({
+    from,
+    to,
+    type: MessageType.AI_DECISION_RESP,
+    payload: { decision, shouldExecuteBridge, reasoning, bridgeParams },
+    correlationId,
+  });
+}
+
+export function createBridgeExecuteRequest(
+  from,
+  to,
+  sourceChain,
+  targetChain,
+  token,
+  amount,
+  recipient,
+  correlationId
+) {
+  return createMessage({
+    from,
+    to,
+    type: MessageType.BRIDGE_EXEC_REQ,
+    payload: { sourceChain, targetChain, token, amount, recipient },
+    correlationId,
+  });
+}
+
+export function createBridgeExecuteResponse(
+  from,
+  to,
+  status,
+  transactionHash,
+  error,
+  correlationId
+) {
+  const payload = { status, timestamp: new Date().toISOString() };
+  if (transactionHash) payload.transactionHash = transactionHash;
+  if (error) payload.error = error;
+
+  return createMessage({
+    from,
+    to,
+    type: MessageType.BRIDGE_EXEC_RESP,
+    payload,
+    correlationId,
+  });
+}
+
+export function createNotifyMessage(from, to, message, level, correlationId) {
+  return createMessage({
+    from,
+    to,
+    type: MessageType.NOTIFY,
+    payload: {
+      message,
+      level: level || "info",
+      timestamp: new Date().toISOString(),
+    },
     correlationId,
   });
 }

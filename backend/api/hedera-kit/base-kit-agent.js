@@ -126,6 +126,11 @@ export class BaseKitAgent extends EventEmitter {
       const messageJson = messageBytes.toString("utf-8");
       const message = JSON.parse(messageJson);
 
+      // Debug: log all received messages
+      console.log(
+        `[${this.agentId}] 📨 HCS message received: ${message.type} from ${message.from} to ${message.to}`
+      );
+
       // Validate A2A message
       const validation = validateMessage(message);
       if (!validation.valid) {
@@ -135,6 +140,9 @@ export class BaseKitAgent extends EventEmitter {
 
       // Check if message is for this agent
       if (message.to !== this.agentId && message.to !== "broadcast") {
+        console.log(
+          `[${this.agentId}] Message not for me (for ${message.to}), skipping`
+        );
         return;
       }
 
