@@ -17,6 +17,7 @@ import AvailBridgeExecuteNode from "./workflowComponents/AvailBridgeExecuteNode"
 import HederaBuyerNode from "./workflowComponents/HederaBuyerNode";
 import HederaSellerNode from "./workflowComponents/HederaSellerNode";
 import HederaPaymentNode from "./workflowComponents/HederaPaymentNode";
+import HederaAgentNode from "./workflowComponents/HederaAgentNode";
 import { useAvailExecutor } from "./workflowComponents/AvailExecutorWagmi";
 
 interface SubNode {
@@ -888,6 +889,18 @@ export default function WorkflowPage() {
               } else if (node.type === "avail-bridge-execute") {
                 return (
                   <AvailBridgeExecuteNode
+                    key={node.id}
+                    node={node}
+                    isLast={index === nodes.length - 1}
+                    onMouseDown={handleMouseDown}
+                    onDelete={handleDeleteNode}
+                    onUpdateInputs={handleUpdateNodeInputs}
+                    onAddNode={() => setIsPanelOpen(true)}
+                  />
+                );
+              } else if (node.type === "hedera-agent") {
+                return (
+                  <HederaAgentNode
                     key={node.id}
                     node={node}
                     isLast={index === nodes.length - 1}

@@ -1,13 +1,3 @@
-/**
- * Create Hedera Resources Script
- *
- * Helper script to create HCS topic and optionally HTS token for the demo.
- * Run this once to set up your testnet resources.
- *
- * Usage:
- *   node backend/api/hedera/scripts/create-resources.js
- */
-
 import {
   Client,
   PrivateKey,

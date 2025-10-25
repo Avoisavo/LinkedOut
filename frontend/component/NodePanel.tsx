@@ -52,6 +52,13 @@ const nodeTypes: NodeType[] = [
     category: "Hedera",
     subNodes: [
       {
+        id: "hedera-agent",
+        title: "Hedera Agent System",
+        description: "Telegram → AI → Bridge workflow with A2A communication",
+        icon: "🤖",
+        category: "Hedera",
+      },
+      {
         id: "hedera-buyer",
         title: "Buyer Agent",
         description: "Initiates purchase negotiations with sellers",
