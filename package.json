@@ -1,5 +1,7 @@
 {
   "dependencies": {
-    "@avail-project/nexus-widgets": "^0.0.5"
+    "@avail-project/nexus-widgets": "^0.0.5",
+    "@langchain/groq": "^1.0.0",
+    "hedera-agent-kit": "^3.4.0"
   }
 }
