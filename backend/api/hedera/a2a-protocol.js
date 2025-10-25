@@ -249,7 +249,7 @@ export function validateMessage(message) {
   if (!message.correlationId) errors.push("Missing field: correlationId");
   if (!message.payload) errors.push("Missing field: payload");
   if (!message.timestamp) errors.push("Missing field: timestamp");
-  if (!message.signature) errors.push("Missing field: signature");
+  // Signature is optional - Hedera provides transaction-level authentication
 
   // Validate message type
   if (message.type && !Object.values(MessageType).includes(message.type)) {

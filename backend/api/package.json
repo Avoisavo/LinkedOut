@@ -16,6 +16,7 @@
     "@hashgraph/sdk": "^2.68.0",
     "@langchain/core": "^0.3.66",
     "@langchain/openai": "^0.6.2",
+    "@langchain/groq": "^0.2.3",
     "langchain": "^0.3.30",
     "hedera-agent-kit": "^3.4.0",
     "uuid": "^9.0.1"
