@@ -179,6 +179,23 @@ export class BaseAgent extends EventEmitter {
       throw new Error("Agent is not running");
     }
 
+    // Sign the message before sending
+    // For demo purposes, we'll use a simple hash-based signature
+    // In production, you'd use proper Ed25519 signing with Hedera keys
+    const messageToSign = {
+      ...message,
+      signature: undefined, // Remove signature field before signing
+    };
+
+    const crypto = await import("crypto");
+    const messageString = JSON.stringify(messageToSign);
+    const signature = crypto
+      .createHash("sha256")
+      .update(messageString + this.privateKey)
+      .digest("hex");
+
+    message.signature = signature;
+
     const result = await this.transport.publishMessage(message);
 
     if (result.success) {
