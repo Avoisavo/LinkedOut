@@ -35,6 +35,9 @@ export class BaseAgent extends EventEmitter {
     // Track active conversations
     this.conversations = new Map(); // correlationId -> conversation state
 
+    // Track processed message IDs to prevent duplicates
+    this.processedMessageIds = new Set();
+
     console.log(`[${this.agentId}] Agent initialized`);
   }
 
@@ -114,6 +117,19 @@ export class BaseAgent extends EventEmitter {
    */
   async _routeMessage(message, metadata) {
     try {
+      // Check for duplicate messages
+      if (this.processedMessageIds.has(message.id)) {
+        // Silently skip duplicate
+        return;
+      }
+      this.processedMessageIds.add(message.id);
+
+      // Clean up old message IDs (keep last 100)
+      if (this.processedMessageIds.size > 100) {
+        const firstId = this.processedMessageIds.values().next().value;
+        this.processedMessageIds.delete(firstId);
+      }
+
       console.log(`[${this.agentId}] Routing message: ${message.type}`);
 
       // Validate message

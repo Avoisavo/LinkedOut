@@ -23,7 +23,28 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Load environment variables from root .env file
-dotenv.config({ path: join(__dirname, "../../../../.env") });
+// Try multiple paths to ensure we find the .env file
+const envPaths = [
+  join(__dirname, "../../../../.env"), // From scripts/ folder
+  join(process.cwd(), ".env"), // From current working directory
+  "/Users/edw/Desktop/LinkedOut/.env", // Absolute path
+];
+
+let envLoaded = false;
+for (const envPath of envPaths) {
+  const result = dotenv.config({ path: envPath });
+  if (!result.error) {
+    console.log(`✅ Loaded environment from: ${envPath}\n`);
+    envLoaded = true;
+    break;
+  }
+}
+
+if (!envLoaded) {
+  console.error("⚠️  Warning: Could not load .env file");
+  console.error("Tried paths:", envPaths);
+  console.error("\nMake sure .env exists in project root\n");
+}
 
 async function createResources() {
   console.log("🚀 Hedera Resource Setup Script");
@@ -58,7 +79,7 @@ async function createResources() {
     console.log("📝 Creating HCS Topic for A2A messages...");
     const topicTx = await new TopicCreateTransaction()
       .setTopicMemo("LinkedOut A2A Message Bus")
-      .setSubmitKey(client.operatorPublicKey) // Anyone can submit
+      // No submit key = anyone can submit messages
       .execute(client);
 
     const topicReceipt = await topicTx.getReceipt(client);

@@ -45,6 +45,36 @@ const nodeTypes: NodeType[] = [
     ],
   },
   {
+    id: "hedera",
+    title: "Hedera Agents",
+    description: "Multi-agent negotiation and payments on Hedera via HCS + HTS",
+    icon: "🪙",
+    category: "Hedera",
+    subNodes: [
+      {
+        id: "hedera-buyer",
+        title: "Buyer Agent",
+        description: "Initiates purchase negotiations with sellers",
+        icon: "🛒",
+        category: "Hedera",
+      },
+      {
+        id: "hedera-seller",
+        title: "Seller Agent",
+        description: "Responds to offers with counteroffers or acceptance",
+        icon: "🏪",
+        category: "Hedera",
+      },
+      {
+        id: "hedera-payment",
+        title: "Payment Agent",
+        description: "Executes HTS token transfers (AP2)",
+        icon: "💳",
+        category: "Hedera",
+      },
+    ],
+  },
+  {
     id: "action",
     title: "Action in an app",
     description:

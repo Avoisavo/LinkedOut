@@ -14,6 +14,9 @@ import ModelSelectionModal from "./workflowComponents/ModelSelectionModal";
 import IfNodeConfig from "./workflowComponents/IfNodeConfig";
 import AvailBridgeNode from "./workflowComponents/AvailBridgeNode";
 import AvailBridgeExecuteNode from "./workflowComponents/AvailBridgeExecuteNode";
+import HederaBuyerNode from "./workflowComponents/HederaBuyerNode";
+import HederaSellerNode from "./workflowComponents/HederaSellerNode";
+import HederaPaymentNode from "./workflowComponents/HederaPaymentNode";
 import { useAvailExecutor } from "./workflowComponents/AvailExecutorWagmi";
 
 interface SubNode {
@@ -168,6 +171,49 @@ export default function WorkflowPage() {
         type: "avail-bridge-execute",
         title: "Avail Bridge & Execute",
         icon: "🚀",
+        position: { x: 400, y: nodes.length * 150 + 100 },
+        inputs: {},
+      };
+      setNodes([...nodes, newNode]);
+      setIsPanelOpen(false);
+      return;
+    }
+
+    // Handle Hedera nodes
+    if (nodeType.id === "hedera-buyer") {
+      const newNode: WorkflowNode = {
+        id: Date.now().toString(),
+        type: "hedera-buyer",
+        title: "Hedera Buyer Agent",
+        icon: "🛒",
+        position: { x: 400, y: nodes.length * 150 + 100 },
+        inputs: {},
+      };
+      setNodes([...nodes, newNode]);
+      setIsPanelOpen(false);
+      return;
+    }
+
+    if (nodeType.id === "hedera-seller") {
+      const newNode: WorkflowNode = {
+        id: Date.now().toString(),
+        type: "hedera-seller",
+        title: "Hedera Seller Agent",
+        icon: "🏪",
+        position: { x: 400, y: nodes.length * 150 + 100 },
+        inputs: {},
+      };
+      setNodes([...nodes, newNode]);
+      setIsPanelOpen(false);
+      return;
+    }
+
+    if (nodeType.id === "hedera-payment") {
+      const newNode: WorkflowNode = {
+        id: Date.now().toString(),
+        type: "hedera-payment",
+        title: "Hedera Payment Agent",
+        icon: "💳",
         position: { x: 400, y: nodes.length * 150 + 100 },
         inputs: {},
       };
@@ -842,6 +888,42 @@ export default function WorkflowPage() {
               } else if (node.type === "avail-bridge-execute") {
                 return (
                   <AvailBridgeExecuteNode
+                    key={node.id}
+                    node={node}
+                    isLast={index === nodes.length - 1}
+                    onMouseDown={handleMouseDown}
+                    onDelete={handleDeleteNode}
+                    onUpdateInputs={handleUpdateNodeInputs}
+                    onAddNode={() => setIsPanelOpen(true)}
+                  />
+                );
+              } else if (node.type === "hedera-buyer") {
+                return (
+                  <HederaBuyerNode
+                    key={node.id}
+                    node={node}
+                    isLast={index === nodes.length - 1}
+                    onMouseDown={handleMouseDown}
+                    onDelete={handleDeleteNode}
+                    onUpdateInputs={handleUpdateNodeInputs}
+                    onAddNode={() => setIsPanelOpen(true)}
+                  />
+                );
+              } else if (node.type === "hedera-seller") {
+                return (
+                  <HederaSellerNode
+                    key={node.id}
+                    node={node}
+                    isLast={index === nodes.length - 1}
+                    onMouseDown={handleMouseDown}
+                    onDelete={handleDeleteNode}
+                    onUpdateInputs={handleUpdateNodeInputs}
+                    onAddNode={() => setIsPanelOpen(true)}
+                  />
+                );
+              } else if (node.type === "hedera-payment") {
+                return (
+                  <HederaPaymentNode
                     key={node.id}
                     node={node}
                     isLast={index === nodes.length - 1}

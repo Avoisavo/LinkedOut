@@ -29,7 +29,30 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Load environment from root .env file
-dotenv.config({ path: join(__dirname, "../../../.env") });
+// Try multiple paths to ensure we find the .env file
+const envPaths = [
+  join(__dirname, "../../../.env"), // From hedera/ folder
+  join(process.cwd(), ".env"), // From current working directory
+  "/Users/edw/Desktop/LinkedOut/.env", // Absolute path
+];
+
+let envLoaded = false;
+for (const envPath of envPaths) {
+  const result = dotenv.config({ path: envPath });
+  if (!result.error) {
+    console.log(`✅ Loaded environment from: ${envPath}\n`);
+    envLoaded = true;
+    break;
+  }
+}
+
+if (!envLoaded) {
+  console.error(
+    "⚠️  Warning: Could not load .env file from any expected location"
+  );
+  console.error("Tried paths:", envPaths);
+  console.error("\nMake sure .env exists in project root\n");
+}
 
 // Verify environment
 function checkEnvironment() {
@@ -194,13 +217,13 @@ async function testNegotiation() {
     paymentSuccess = true;
   });
 
-  // Buyer makes a low offer (50 HBAR - below seller's minimum)
-  console.log("👤 Buyer: Making low offer for 5 gadgets at 50 HBAR each\n");
+  // Buyer makes a low offer (65 HBAR - above seller's minimum but below ideal)
+  console.log("👤 Buyer: Making low offer for 5 gadgets at 65 HBAR each\n");
 
   await buyer.makeOffer({
     item: "gadgets",
     qty: 5,
-    unitPrice: 50,
+    unitPrice: 65,
     currency: "HBAR",
   });
 
@@ -364,10 +387,18 @@ async function runAllTests() {
 
   const results = {
     happyPath: await testHappyPath(),
-    negotiation: await testNegotiation(),
-    rejection: await testRejection(),
-    idempotency: await testIdempotency(),
   };
+
+  // Wait between tests to allow message queues to settle
+  await new Promise((resolve) => setTimeout(resolve, 3000));
+
+  results.negotiation = await testNegotiation();
+  await new Promise((resolve) => setTimeout(resolve, 3000));
+
+  results.rejection = await testRejection();
+  await new Promise((resolve) => setTimeout(resolve, 3000));
+
+  results.idempotency = await testIdempotency();
 
   console.log("\n📊 Test Results Summary");
   console.log("==========================================");

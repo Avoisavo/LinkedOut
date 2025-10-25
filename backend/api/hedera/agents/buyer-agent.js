@@ -259,6 +259,10 @@ export class BuyerAgent extends BaseAgent {
 
     if (result.success) {
       console.log(`[${this.agentId}] ACCEPT sent`);
+
+      // Initiate payment after accepting
+      const totalAmount = qty * unitPrice;
+      await this._initiatePayment(correlationId, totalAmount, item, qty);
     } else {
       console.error(`[${this.agentId}] Failed to send ACCEPT:`, result.error);
     }

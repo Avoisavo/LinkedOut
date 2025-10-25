@@ -114,25 +114,51 @@ export class HCSTransport {
         // We'll filter in the callback instead
         this.lastSequenceNumber = startSequence - 1;
       } else {
-        // Start from now
-        query.setStartTime(0);
+        // Start from now (don't retrieve historical messages)
+        // Don't set start time to get only future messages
       }
 
       // Subscribe with callback
-      query.subscribe(
-        this.client,
-        (message) => {
+      // Track processed messages to avoid duplicates
+      const processedMessages = new Set();
+
+      const messageHandler = (message) => {
+        // Check if this is actually a message object (not an error)
+        if (message && message.contents && message.consensusTimestamp) {
+          // Create unique key for this message
+          const messageKey = `${message.consensusTimestamp.seconds.toString()}-${message.consensusTimestamp.nanos.toString()}-${message.sequenceNumber.toString()}`;
+
+          // Skip if already processed
+          if (processedMessages.has(messageKey)) {
+            return;
+          }
+          processedMessages.add(messageKey);
+
+          // Clean up old entries (keep last 100)
+          if (processedMessages.size > 100) {
+            const firstKey = processedMessages.values().next().value;
+            processedMessages.delete(firstKey);
+          }
+
           this._handleIncomingMessage(
             message,
             callback,
             filterAgentIds,
             startSequence
           );
-        },
-        (error) => {
+        }
+      };
+
+      const errorHandler = (error) => {
+        // Sometimes valid messages come through error callback - check first
+        if (error && error.contents && error.consensusTimestamp) {
+          messageHandler(error);
+        } else {
           console.error("[HCS] Subscription error:", error);
         }
-      );
+      };
+
+      query.subscribe(this.client, messageHandler, errorHandler);
 
       this.isSubscribed = true;
       console.log("[HCS] Subscription active");
