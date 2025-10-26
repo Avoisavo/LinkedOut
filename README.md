@@ -890,6 +890,7 @@ User: "Bridge 0.1 USDC from Ethereum to Base and wrap as WETH"
 
 ### Tan Zhi Wei
 - Full Stack Developer
+- Frontend Developer
 - LayerZero Integration
 - PayPal Integration
 
