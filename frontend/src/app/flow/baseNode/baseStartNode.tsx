@@ -10,7 +10,7 @@ interface BaseStartNodeProps {
   onDelete: () => void;
   onAddConnection?: () => void;
   hasChildren?: boolean;
-  data?: any;
+  data?: Record<string, unknown>;
   isExecuting?: boolean;
 }
 

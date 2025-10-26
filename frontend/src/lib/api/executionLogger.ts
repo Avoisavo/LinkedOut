@@ -6,7 +6,7 @@ export interface ExecutionLog {
   status: "pending" | "running" | "success" | "error";
   startTime?: number;
   endTime?: number;
-  logs?: any[];
+  logs?: Record<string, unknown>[];
   errorMessage?: string;
   txHashes?: string[];
 }
@@ -16,7 +16,7 @@ export interface ExecutionLog {
  */
 export async function logExecutionStart(params: {
   workflowId: string;
-  logs?: any[];
+  logs?: Record<string, unknown>[];
 }): Promise<ExecutionLog> {
   const response = await fetch(`${API_URL}/api/executions`, {
     method: "POST",
@@ -45,7 +45,7 @@ export async function updateExecutionLog(
   executionId: string,
   params: {
     status?: "running" | "success" | "error";
-    logs?: any[];
+    logs?: Record<string, unknown>[];
     errorMessage?: string;
     txHashes?: string[];
     endTime?: number;
@@ -72,7 +72,7 @@ export async function updateExecutionLog(
  */
 export async function logExecutionSuccess(params: {
   executionId: string;
-  logs: any[];
+  logs: Record<string, unknown>[];
   txHashes?: string[];
 }): Promise<ExecutionLog> {
   return updateExecutionLog(params.executionId, {
@@ -88,7 +88,7 @@ export async function logExecutionSuccess(params: {
  */
 export async function logExecutionError(params: {
   executionId: string;
-  logs: any[];
+  logs: Record<string, unknown>[];
   errorMessage: string;
 }): Promise<ExecutionLog> {
   return updateExecutionLog(params.executionId, {
@@ -120,14 +120,14 @@ export async function getExecutionHistory(
  */
 export async function addExecutionLogEntry(
   executionId: string,
-  currentLogs: any[],
+  currentLogs: Record<string, unknown>[],
   newLogEntry: {
     nodeId: string;
     nodeTitle: string;
     timestamp: string;
     status: "success" | "error";
-    input?: any;
-    output?: any;
+    input?: Record<string, unknown>;
+    output?: Record<string, unknown>;
     error?: string;
     txHash?: string;
   }

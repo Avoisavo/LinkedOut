@@ -122,6 +122,7 @@ export interface BridgeResult {
   txHash?: string;
   error?: string;
   message?: string;
+  [key: string]: unknown;
 }
 
 // Type for Ethereum provider

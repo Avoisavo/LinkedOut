@@ -3,7 +3,7 @@ import { getNexusClient } from "./nexusClient";
 export interface IntentStep {
   type: "bridge" | "swap" | "execute" | "transfer";
   chainId?: number;
-  data: any;
+  data: Record<string, unknown>;
 }
 
 export interface CrosschainIntent {
@@ -34,7 +34,7 @@ export function buildCrosschainIntent(steps: IntentStep[]): CrosschainIntent {
  */
 export async function executeIntent(intent: CrosschainIntent): Promise<{
   success: boolean;
-  results: any[];
+  results: Record<string, unknown>[];
   error?: string;
 }> {
   try {
@@ -80,9 +80,9 @@ export async function executeIntent(intent: CrosschainIntent): Promise<{
  * Execute a single intent step
  */
 async function executeIntentStep(
-  nexusClient: any,
+  nexusClient: Record<string, unknown>,
   step: IntentStep
-): Promise<{ success: boolean; data?: any; error?: string }> {
+): Promise<{ success: boolean; data?: Record<string, unknown>; error?: string }> {
   try {
     switch (step.type) {
       case "bridge":
@@ -108,9 +108,9 @@ async function executeIntentStep(
  * Execute bridge step
  */
 async function executeBridgeStep(
-  nexusClient: any,
-  data: any
-): Promise<{ success: boolean; data?: any; error?: string }> {
+  nexusClient: Record<string, unknown>,
+  data: Record<string, unknown>
+): Promise<{ success: boolean; data?: Record<string, unknown>; error?: string }> {
   try {
     const result = await nexusClient.bridge(data);
     return { success: true, data: result };
@@ -126,9 +126,9 @@ async function executeBridgeStep(
  * Execute swap step
  */
 async function executeSwapStep(
-  nexusClient: any,
-  data: any
-): Promise<{ success: boolean; data?: any; error?: string }> {
+  nexusClient: Record<string, unknown>,
+  data: Record<string, unknown>
+): Promise<{ success: boolean; data?: Record<string, unknown>; error?: string }> {
   try {
     const result = await nexusClient.swap(data);
     return { success: true, data: result };
@@ -144,9 +144,9 @@ async function executeSwapStep(
  * Execute contract call step
  */
 async function executeContractStep(
-  nexusClient: any,
-  data: any
-): Promise<{ success: boolean; data?: any; error?: string }> {
+  nexusClient: Record<string, unknown>,
+  data: Record<string, unknown>
+): Promise<{ success: boolean; data?: Record<string, unknown>; error?: string }> {
   try {
     const result = await nexusClient.executeContract(data);
     return { success: true, data: result };
@@ -163,9 +163,9 @@ async function executeContractStep(
  * Execute transfer step
  */
 async function executeTransferStep(
-  nexusClient: any,
-  data: any
-): Promise<{ success: boolean; data?: any; error?: string }> {
+  nexusClient: Record<string, unknown>,
+  data: Record<string, unknown>
+): Promise<{ success: boolean; data?: Record<string, unknown>; error?: string }> {
   try {
     const result = await nexusClient.transfer(data);
     return { success: true, data: result };

@@ -16,9 +16,36 @@ import {
   addExecutionLogEntry,
 } from "../../lib/api/executionLogger";
 
+interface EthereumProvider {
+  request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
+}
+
+interface NodeInput {
+  [key: string]: string | number | boolean | undefined;
+}
+
+interface WorkflowNode {
+  id: string;
+  type: string;
+  title: string;
+  inputs?: NodeInput;
+}
+
+interface LogEntry {
+  nodeId: string;
+  nodeTitle: string;
+  timestamp: string;
+  status: 'success' | 'error';
+  input: NodeInput;
+  output?: unknown;
+  txHash?: string;
+  error?: string;
+  [key: string]: unknown;
+}
+
 interface ExecuteResult {
   success: boolean;
-  logs: any[];
+  logs: LogEntry[];
   error?: string;
   txHashes?: string[];
 }
@@ -35,9 +62,9 @@ export function useAvailExecutor() {
     walletAddress: address || null,
     executeWorkflow: async (
       workflowId: string,
-      nodes: any[]
+      nodes: WorkflowNode[]
     ): Promise<ExecuteResult> => {
-      return executeAvailWorkflow(workflowId, nodes, isConnected, walletClient);
+      return executeAvailWorkflow(workflowId, nodes, isConnected, walletClient || undefined);
     },
   };
 }
@@ -47,11 +74,11 @@ export function useAvailExecutor() {
  */
 export async function executeAvailWorkflow(
   workflowId: string,
-  nodes: any[],
+  nodes: WorkflowNode[],
   isConnected: boolean,
-  walletClient: any
+  walletClient: { account: { address: string } } | undefined
 ): Promise<ExecuteResult> {
-  const logs: any[] = [];
+  const logs: LogEntry[] = [];
   const txHashes: string[] = [];
 
   try {
@@ -77,8 +104,8 @@ export async function executeAvailWorkflow(
       try {
         // Use window.ethereum directly for better network switching support
         // This ensures the SDK always sees the current network state
-        if (typeof window !== "undefined" && (window as any).ethereum) {
-          const provider = (window as any).ethereum;
+        if (typeof window !== "undefined" && window.ethereum) {
+          const provider = window.ethereum;
           await initializeNexusClient(provider);
           console.log("✅ Nexus SDK initialized successfully!");
         } else {
@@ -97,16 +124,16 @@ export async function executeAvailWorkflow(
     }
 
     // Log the current chain before executing
-    if (typeof window !== "undefined" && (window as any).ethereum) {
+    if (typeof window !== "undefined" && window.ethereum) {
       try {
-        const currentChainId = await (window as any).ethereum.request({
+        const currentChainId = await window.ethereum.request({
           method: "eth_chainId",
         });
         console.log(
           "✅ Executing from chain ID:",
-          parseInt(currentChainId, 16)
+          parseInt(String(currentChainId), 16)
         );
-      } catch (e) {
+      } catch {
         console.warn("Could not detect current chain");
       }
     }
@@ -248,7 +275,7 @@ export async function executeAvailWorkflow(
 /**
  * Execute an Avail Bridge node
  */
-async function executeAvailBridgeNode(node: any) {
+async function executeAvailBridgeNode(node: WorkflowNode) {
   const { targetChain, token, amount } = node.inputs || {};
 
   // Validate required parameters with specific error messages
@@ -280,10 +307,10 @@ async function executeAvailBridgeNode(node: any) {
 
   // Source chain is auto-detected from connected wallet by the SDK
   const result = await executeBridge({
-    sourceChain: targetChain, // Placeholder - SDK ignores this and auto-detects
-    targetChain,
-    token,
-    amount,
+    sourceChain: String(targetChain), // Placeholder - SDK ignores this and auto-detects
+    targetChain: String(targetChain),
+    token: String(token),
+    amount: String(amount),
   });
 
   if (!result.success) {
@@ -296,7 +323,7 @@ async function executeAvailBridgeNode(node: any) {
 /**
  * Execute an Avail Bridge & Execute node
  */
-async function executeAvailBridgeExecuteNode(node: any) {
+async function executeAvailBridgeExecuteNode(node: WorkflowNode) {
   const {
     targetChain,
     token,
@@ -347,22 +374,22 @@ async function executeAvailBridgeExecuteNode(node: any) {
   let parsedParams;
   try {
     parsedParams = executeFunctionParams
-      ? JSON.parse(executeFunctionParams)
+      ? JSON.parse(String(executeFunctionParams))
       : [];
-  } catch (error) {
+  } catch {
     throw new Error("Invalid function parameters JSON");
   }
 
   // Source chain is auto-detected from connected wallet by the SDK
   const result = await executeBridgeAndExecute({
-    sourceChain: targetChain, // Placeholder - SDK ignores this and auto-detects
-    targetChain,
-    token,
-    amount,
-    executeContract,
-    executeFunction,
+    sourceChain: String(targetChain), // Placeholder - SDK ignores this and auto-detects
+    targetChain: String(targetChain),
+    token: String(token),
+    amount: String(amount),
+    executeContract: String(executeContract),
+    executeFunction: String(executeFunction),
     executeFunctionParams: parsedParams,
-    executeValue,
+    executeValue: executeValue ? String(executeValue) : undefined,
   });
 
   if (!result.success) {

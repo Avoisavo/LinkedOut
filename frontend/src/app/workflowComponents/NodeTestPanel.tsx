@@ -5,7 +5,7 @@ interface NodeTestPanelProps {
   appName: string;
   appIcon: string;
   triggerType: string;
-  credential: any;
+  credential: Record<string, unknown>;
   onComplete: () => void;
   onCancel: () => void;
 }

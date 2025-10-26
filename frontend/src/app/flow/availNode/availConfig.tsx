@@ -6,21 +6,26 @@ import { BrowserProvider } from 'ethers';
 import { initializeNexusClient, isNexusClientInitialized } from '@/lib/avail/nexusClient';
 import { executeBridge } from '@/lib/avail/bridgeExecutor';
 
+interface NodeData {
+  sourceNetwork?: string;
+  destinationNetwork?: string;
+  amount?: string;
+  recipientAddress?: string;
+  parentNode?: {
+    type: string;
+    data: {
+      [key: string]: unknown;
+    };
+    name: string;
+  };
+  [key: string]: unknown;
+}
+
 interface AvailConfigPanelProps {
   isOpen: boolean;
   onClose: () => void;
-  nodeData?: {
-    sourceNetwork?: string;
-    destinationNetwork?: string;
-    amount?: string;
-    recipientAddress?: string;
-    parentNode?: {
-      type: string;
-      data: any;
-      name: string;
-    };
-  };
-  onSave?: (data: any) => void;
+  nodeData?: NodeData;
+  onSave?: (data: NodeData) => void;
 }
 
 export default function AvailConfigPanel({ 
@@ -87,7 +92,6 @@ export default function AvailConfigPanel({
     try {
       // Get the wallet provider from the connected wallet client (from header)
       // This ensures we use the same wallet that's connected (MetaMask, Coinbase, etc.)
-      const provider = await walletClient.transport;
       
       // Step 1: Initialize Avail Nexus SDK if not already initialized
       if (!isNexusClientInitialized()) {
@@ -98,8 +102,14 @@ export default function AvailConfigPanel({
         console.log('ℹ️ Using wallet:', walletClient.account.address);
         
         // Check current network
-        if (typeof window !== 'undefined' && (window as any).ethereum) {
-          const ethereum = (window as any).ethereum;
+        if (typeof window !== 'undefined' && window.ethereum) {
+          const ethereum = window.ethereum as {
+            request: (args: { method: string }) => Promise<string>;
+            providers?: Array<{
+              selectedAddress?: string;
+            }>;
+            selectedAddress?: string;
+          };
           
           try {
             const chainId = await ethereum.request({ method: 'eth_chainId' });
@@ -117,8 +127,8 @@ export default function AvailConfigPanel({
             }
             
             console.log('✅ Correct network: Ethereum Sepolia');
-          } catch (error: any) {
-            if (error.message.includes('Wrong network')) {
+          } catch (error: unknown) {
+            if (error instanceof Error && error.message.includes('Wrong network')) {
               throw error;
             }
             console.warn('⚠️ Could not verify network, proceeding anyway...');
@@ -128,7 +138,7 @@ export default function AvailConfigPanel({
           if (ethereum.providers?.length) {
             console.log('🔍 Multiple wallets detected, using connected wallet...');
             // Use the wallet that matches the connected address
-            const matchingProvider = ethereum.providers.find((p: any) => 
+            const matchingProvider = ethereum.providers.find((p) => 
               p.selectedAddress?.toLowerCase() === address?.toLowerCase()
             );
             
@@ -197,11 +207,11 @@ export default function AvailConfigPanel({
       } else {
         throw new Error(result.error || 'Bridge failed');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ Bridge error:', error);
       setBridgeStatus('❌ Bridge failed');
       
-      let errorMessage = error.message || 'Unknown error';
+      let errorMessage = error instanceof Error ? error.message : 'Unknown error';
       
       // Provide helpful error messages
       if (errorMessage.includes('User rejected')) {
@@ -797,7 +807,7 @@ export default function AvailConfigPanel({
                 </div>
                 
                 {/* Multiple Wallets Warning */}
-                {typeof window !== 'undefined' && (window as any).ethereum?.providers?.length > 1 && (
+                {typeof window !== 'undefined' && (window as unknown as { ethereum?: { providers?: unknown[] } }).ethereum?.providers?.length > 1 && (
                   <div
                     className="p-3 rounded-lg flex items-start gap-2"
                     style={{

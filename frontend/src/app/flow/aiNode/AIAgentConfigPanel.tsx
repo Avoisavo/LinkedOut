@@ -11,23 +11,29 @@ import {
   BridgeProgress 
 } from '@/lib/bridgeToHedera';
 
+interface NodeData {
+  chatModel?: string;
+  memory?: string;
+  remark?: string;
+  prompt?: string;
+  chatId?: string | number;
+  telegramChatId?: string | number;
+  parentNode?: {
+    type: string;
+    data: {
+      botToken?: string;
+      [key: string]: unknown;
+    };
+    name: string;
+  };
+  [key: string]: unknown;
+}
+
 interface AIAgentConfigPanelProps {
   isOpen: boolean;
   onClose: () => void;
-  nodeData?: {
-    chatModel?: string;
-    memory?: string;
-    remark?: string;
-    prompt?: string;
-    chatId?: string | number;
-    telegramChatId?: string | number;
-    parentNode?: {
-      type: string;
-      data: any;
-      name: string;
-    };
-  };
-  onSave?: (data: any) => void;
+  nodeData?: NodeData;
+  onSave?: (data: NodeData) => void;
 }
 
 export default function AIAgentConfigPanel({ 
@@ -41,7 +47,7 @@ export default function AIAgentConfigPanel({
   const [outputFormat, setOutputFormat] = useState(false);
   const [fallbackMode, setFallbackMode] = useState(false);
   const [isTelegramModalOpen, setIsTelegramModalOpen] = useState(false);
-  const [telegramOutput, setTelegramOutput] = useState<any>(null);
+  const [telegramOutput, setTelegramOutput] = useState<Record<string, unknown> | null>(null);
   const [isLoadingOutput, setIsLoadingOutput] = useState(false);
   
   // Bridge-related state
@@ -57,7 +63,7 @@ export default function AIAgentConfigPanel({
   const [isExecutingSwap, setIsExecutingSwap] = useState(false);
   
   // Wallet connection
-  const { address, isConnected } = useAccount();
+  const { isConnected } = useAccount();
   const { data: walletClient } = useWalletClient();
 
   // Fetch balances when panel opens and wallet is connected
@@ -115,9 +121,9 @@ export default function AIAgentConfigPanel({
       } else {
         alert(`Bridge failed: ${result.error}`);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Bridge error:', error);
-      alert(`Bridge failed: ${error.message}`);
+      alert(`Bridge failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsBridging(false);
     }
@@ -139,9 +145,9 @@ export default function AIAgentConfigPanel({
       await new Promise(resolve => setTimeout(resolve, 1500));
       
       alert(`Payment executed with prompt:\n"${swapPrompt}"\n\nPayment functionality will be implemented.`);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Payment error:', error);
-      alert(`Payment failed: ${error.message}`);
+      alert(`Payment failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsExecutingSwap(false);
     }
@@ -189,7 +195,7 @@ export default function AIAgentConfigPanel({
   };
 
   // Handle Telegram credential submission
-  const handleTelegramSubmit = (token: string, botInfo: any) => {
+  const handleTelegramSubmit = (token: string) => {
     setIsTelegramModalOpen(false);
     fetchTelegramUpdates(token);
   };
@@ -399,7 +405,7 @@ export default function AIAgentConfigPanel({
                 <p className="text-xs font-semibold text-green-700 mb-2">Telegram Message</p>
                 <div className="space-y-1">
                   <p className="text-xs text-green-800">
-                    <strong>Text:</strong> "Bridge 0.005 eth from base sepolia to hedera when ETH price reach usd3800"
+                    <strong>Text:</strong> &quot;Bridge 0.005 eth from base sepolia to hedera when ETH price reach usd3800&quot;
                   </p>
                   <p className="text-xs text-green-800">
                     <strong>From:</strong> @zhiweiavo (Zhi Wei)

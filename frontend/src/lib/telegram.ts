@@ -30,11 +30,11 @@ export interface TelegramMessage {
     };
     date: number;
     text?: string;
-    photo?: any[];
-    document?: any;
-    video?: any;
-    audio?: any;
-    voice?: any;
+    photo?: Record<string, unknown>[];
+    document?: Record<string, unknown>;
+    video?: Record<string, unknown>;
+    audio?: Record<string, unknown>;
+    voice?: Record<string, unknown>;
   };
 }
 

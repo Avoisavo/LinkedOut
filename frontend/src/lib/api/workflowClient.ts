@@ -4,8 +4,8 @@ export interface Workflow {
   id: string;
   name: string;
   description?: string;
-  nodes: any[];
-  connections?: any[];
+  nodes: Record<string, unknown>[];
+  connections?: Record<string, unknown>[];
   userId?: string;
   createdAt: number;
   updatedAt: number;
@@ -16,8 +16,8 @@ export interface Template {
   name: string;
   description?: string;
   category: string;
-  nodes: any[];
-  connections?: any[];
+  nodes: Record<string, unknown>[];
+  connections?: Record<string, unknown>[];
   tags: string[];
   featured: boolean;
   createdBy: string;
@@ -30,8 +30,8 @@ export interface Template {
 export async function createWorkflow(data: {
   name: string;
   description?: string;
-  nodes: any[];
-  connections?: any[];
+  nodes: Record<string, unknown>[];
+  connections?: Record<string, unknown>[];
   userId?: string;
 }): Promise<Workflow> {
   const response = await fetch(`${API_URL}/api/workflows`, {
@@ -88,8 +88,8 @@ export async function updateWorkflow(
   data: {
     name: string;
     description?: string;
-    nodes: any[];
-    connections?: any[];
+    nodes: Record<string, unknown>[];
+    connections?: Record<string, unknown>[];
   }
 ): Promise<Workflow> {
   const response = await fetch(`${API_URL}/api/workflows/${id}`, {

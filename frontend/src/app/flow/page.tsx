@@ -69,7 +69,10 @@ interface Node {
   data: {
     // Telegram node properties
     botToken?: string;
-    botInfo?: any;
+    botInfo?: {
+      id?: number;
+      [key: string]: unknown;
+    };
     triggerType?: string;
     chatId?: string | number;
     icon?: string;
@@ -113,7 +116,7 @@ function FlowPageContent() {
   const [selectedTrigger, setSelectedTrigger] = useState<string | null>(null);
   const [selectedTelegramAction, setSelectedTelegramAction] = useState<string>('');
   const [botToken, setBotToken] = useState<string>('');
-  const [botInfo, setBotInfo] = useState<any>(null);
+  const [botInfo, setBotInfo] = useState<{ id?: number; [key: string]: unknown } | null>(null);
   const [nodes, setNodes] = useState<Node[]>([]);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [bridgeStatus, setBridgeStatus] = useState<string>('');
@@ -191,14 +194,18 @@ function FlowPageContent() {
       // Add parent data to the selected node
       setSelectedAIAgentNode({
         ...node,
-        parentNode: parentNodeData,
-      } as any);
+        parentNode: parentNodeData as {
+          type: string;
+          data: Record<string, unknown>;
+          name: string;
+        },
+      });
       setIsAIAgentConfigOpen(true);
     }
   };
 
   // Handle saving AI Agent configuration
-  const handleSaveAIAgentConfig = (updatedData: any) => {
+  const handleSaveAIAgentConfig = (updatedData: Partial<Node['data']>) => {
     if (selectedAIAgentNode) {
       setNodes(prev => prev.map(node => 
         node.id === selectedAIAgentNode.id
@@ -241,7 +248,7 @@ function FlowPageContent() {
   };
 
   // Handle saving IfElse configuration
-  const handleSaveIfElseConfig = (updatedData: any) => {
+  const handleSaveIfElseConfig = (updatedData: Partial<Node['data']>) => {
     if (selectedIfElseNode) {
       setNodes(prev => prev.map(node => 
         node.id === selectedIfElseNode.id
@@ -252,7 +259,7 @@ function FlowPageContent() {
   };
 
   // Handle saving Avail configuration
-  const handleSaveAvailConfig = (updatedData: any) => {
+  const handleSaveAvailConfig = (updatedData: Partial<Node['data']>) => {
     if (selectedAvailNode) {
       setNodes(prev => prev.map(node => 
         node.id === selectedAvailNode.id
@@ -296,9 +303,9 @@ function FlowPageContent() {
       } else {
         alert(`Bridge failed: ${result.error}`);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Bridge error:', error);
-      alert(`Bridge failed: ${error.message}`);
+      alert(`Bridge failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsBridging(false);
     }
@@ -465,9 +472,9 @@ function FlowPageContent() {
         setBridgeStatus(`❌ Bridge failed: ${result.error}`);
         setTimeout(() => setBridgeStatus(''), 5000);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Bridge error:', error);
-      setBridgeStatus(`❌ Error: ${error.message}`);
+      setBridgeStatus(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setTimeout(() => setBridgeStatus(''), 5000);
     } finally {
       setIsBridging(false);
@@ -1054,12 +1061,12 @@ function FlowPageContent() {
                         id: node.id,
                         type: node.type,
                         title: node.name,
-                        icon: node.data.icon || '🔗',
+                        icon: String(node.data.icon) || '🔗',
                         position: node.position,
-                        inputs: node.data as any,
+                        inputs: node.data,
                       }}
                       isLast={!nodes.some(n => n.parentId === node.id)}
-                      onMouseDown={(e: any) => handleNodeMouseDown(e, node.id)}
+                      onMouseDown={(e: React.MouseEvent) => handleNodeMouseDown(e, node.id)}
                       onDelete={(nodeId: string) => {
                         setNodes((prev) => prev.filter((n) => n.id !== nodeId));
                       }}
@@ -1094,12 +1101,12 @@ function FlowPageContent() {
                         id: node.id,
                         type: node.type,
                         title: node.name,
-                        icon: node.data.icon || '🚀',
+                        icon: String(node.data.icon) || '🚀',
                         position: node.position,
-                        inputs: node.data as any,
+                        inputs: node.data,
                       }}
                       isLast={!nodes.some(n => n.parentId === node.id)}
-                      onMouseDown={(e: any) => handleNodeMouseDown(e, node.id)}
+                      onMouseDown={(e: React.MouseEvent) => handleNodeMouseDown(e, node.id)}
                       onDelete={(nodeId: string) => {
                         setNodes((prev) => prev.filter((n) => n.id !== nodeId));
                       }}
@@ -2008,7 +2015,7 @@ function FlowPageContent() {
       <TelegramCredentialModal
         isOpen={isCredentialModalOpen}
         onClose={() => setIsCredentialModalOpen(false)}
-        onSubmit={(token: string, info: any) => {
+        onSubmit={(token: string, info: { id?: number; [key: string]: unknown }) => {
           console.log('Bot token submitted:', token);
           console.log('Bot info:', info);
           setBotToken(token);

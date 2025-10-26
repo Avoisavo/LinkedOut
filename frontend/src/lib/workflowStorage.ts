@@ -3,7 +3,7 @@
 export interface WorkflowData {
   id: string;
   title: string;
-  nodes: any[];
+  nodes: Record<string, unknown>[];
   transform: {
     x: number;
     y: number;

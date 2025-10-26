@@ -23,7 +23,7 @@ export interface BridgeResult {
   success: boolean;
   txHash?: string;
   error?: string;
-  receipt?: any;
+  receipt?: Record<string, unknown>;
 }
 
 export interface BridgeProgress {
@@ -39,7 +39,7 @@ export interface BridgeProgress {
  * @param onProgress - Callback for progress updates
  */
 export async function bridgeToHedera(
-  provider: any,
+  provider: unknown,
   params: BridgeParams,
   onProgress?: (progress: BridgeProgress) => void
 ): Promise<BridgeResult> {
@@ -135,17 +135,17 @@ export async function bridgeToHedera(
       txHash: receipt.hash,
       receipt,
     };
-  } catch (error: any) {
+  } catch (error) {
     console.error('Bridge error:', error);
     
     onProgress?.({
       step: 'error',
-      message: error.message || 'Bridge transaction failed',
+      message: error instanceof Error ? error.message : 'Bridge transaction failed',
     });
 
     return {
       success: false,
-      error: error.message || 'Unknown error occurred',
+      error: error instanceof Error ? error.message : 'Unknown error occurred',
     };
   }
 }
@@ -153,7 +153,7 @@ export async function bridgeToHedera(
 /**
  * Check token balance
  */
-export async function checkOFTBalance(provider: any): Promise<string> {
+export async function checkOFTBalance(provider: unknown): Promise<string> {
   try {
     const signer = await provider.getSigner();
     const signerAddress = await signer.getAddress();
@@ -171,7 +171,7 @@ export async function checkOFTBalance(provider: any): Promise<string> {
 /**
  * Get ETH balance
  */
-export async function checkETHBalance(provider: any): Promise<string> {
+export async function checkETHBalance(provider: unknown): Promise<string> {
   try {
     const signer = await provider.getSigner();
     const signerAddress = await signer.getAddress();

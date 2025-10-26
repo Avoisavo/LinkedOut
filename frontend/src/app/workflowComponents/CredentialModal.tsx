@@ -5,7 +5,7 @@ interface CredentialModalProps {
   appName: string;
   appIcon: string;
   onClose: () => void;
-  onCredentialSaved: (credential: any) => void;
+  onCredentialSaved: (credential: Record<string, unknown>) => void;
 }
 
 export default function CredentialModal({

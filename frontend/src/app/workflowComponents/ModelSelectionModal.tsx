@@ -3,7 +3,7 @@
 interface ModelSelectionModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSelectModel: (model: any) => void;
+  onSelectModel: (model: Record<string, unknown>) => void;
 }
 
 const AVAILABLE_MODELS = [

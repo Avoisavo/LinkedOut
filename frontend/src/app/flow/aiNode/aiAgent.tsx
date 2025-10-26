@@ -10,19 +10,19 @@ interface AIAgentNodeProps {
   onDelete: () => void;
   onAddConnection?: () => void;
   hasChildren?: boolean;
-  data?: any;
+  data?: {
+    [key: string]: unknown;
+  };
   isExecuting?: boolean;
 }
 
 export default function AIAgentNode({ 
-  id, 
   position, 
   isDragging, 
   onMouseDown, 
   onDelete,
   onAddConnection,
   hasChildren,
-  data,
   isExecuting 
 }: AIAgentNodeProps) {
   const [showModelModal, setShowModelModal] = useState(false);

@@ -10,12 +10,12 @@ interface HederaAgentNodeProps {
     title: string;
     icon: string;
     position: { x: number; y: number };
-    inputs?: { [key: string]: any };
+    inputs?: { [key: string]: unknown };
   };
   isLast: boolean;
   onMouseDown: (e: React.MouseEvent, nodeId: string) => void;
   onDelete: (nodeId: string) => void;
-  onUpdateInputs: (nodeId: string, inputs: any) => void;
+  onUpdateInputs: (nodeId: string, inputs: Record<string, unknown>) => void;
   onAddNode: () => void;
 }
 
@@ -30,9 +30,9 @@ export default function HederaAgentNode({
   const [isExpanded, setIsExpanded] = useState(true);
   const [userMessage, setUserMessage] = useState("");
   const [processing, setProcessing] = useState(false);
-  const [notifications, setNotifications] = useState<any[]>([]);
-  const [pendingBridges, setPendingBridges] = useState<any[]>([]);
-  const [agentStatus, setAgentStatus] = useState<any>(null);
+  const [notifications, setNotifications] = useState<Record<string, unknown>[]>([]);
+  const [pendingBridges, setPendingBridges] = useState<Record<string, unknown>[]>([]);
+  const [agentStatus, setAgentStatus] = useState<Record<string, unknown> | null>(null);
 
   const inputs = node.inputs || {};
   const chatId = inputs.chatId || `workflow-${node.id}`;
@@ -118,11 +118,11 @@ export default function HederaAgentNode({
       });
 
       setUserMessage("");
-    } catch (error: any) {
+    } catch (error) {
       console.error("Failed to send message:", error);
       onUpdateInputs(node.id, {
         ...inputs,
-        error: error.message,
+        error: error instanceof Error ? error.message : "Unknown error",
         status: "error",
       });
       setProcessing(false);
@@ -133,8 +133,8 @@ export default function HederaAgentNode({
     try {
       await AgentAPI.simulateBridge(correlationId);
       alert("Bridge simulation completed! Check notifications.");
-    } catch (error: any) {
-      alert(`Failed to simulate bridge: ${error.message}`);
+    } catch (error) {
+      alert(`Failed to simulate bridge: ${error instanceof Error ? error.message : "Unknown error"}`);
     }
   };
 
@@ -142,8 +142,8 @@ export default function HederaAgentNode({
     try {
       await AgentAPI.startAgents();
       alert("Agents started successfully!");
-    } catch (error: any) {
-      alert(`Failed to start agents: ${error.message}`);
+    } catch (error) {
+      alert(`Failed to start agents: ${error instanceof Error ? error.message : "Unknown error"}`);
     }
   };
 
@@ -151,8 +151,8 @@ export default function HederaAgentNode({
     try {
       await AgentAPI.stopAgents();
       alert("Agents stopped");
-    } catch (error: any) {
-      alert(`Failed to stop agents: ${error.message}`);
+    } catch (error) {
+      alert(`Failed to stop agents: ${error instanceof Error ? error.message : "Unknown error"}`);
     }
   };
 

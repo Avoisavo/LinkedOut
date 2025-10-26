@@ -11,7 +11,7 @@ interface AvailStartNodeProps {
   onAddConnection?: () => void;
   onDoubleClick?: () => void;
   hasChildren?: boolean;
-  data?: any;
+  data?: Record<string, unknown>;
   isExecuting?: boolean;
 }
 

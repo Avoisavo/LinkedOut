@@ -3,8 +3,8 @@ interface ExecutionLog {
   nodeTitle: string;
   timestamp: string;
   status: "success" | "error";
-  input?: any;
-  output?: any;
+  input?: Record<string, unknown>;
+  output?: Record<string, unknown>;
   error?: string;
 }
 

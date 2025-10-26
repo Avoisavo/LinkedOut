@@ -9,12 +9,12 @@ interface HederaSellerNodeProps {
     title: string;
     icon: string;
     position: { x: number; y: number };
-    inputs?: { [key: string]: any };
+    inputs?: { [key: string]: unknown };
   };
   isLast: boolean;
   onMouseDown: (e: React.MouseEvent, nodeId: string) => void;
   onDelete: (nodeId: string) => void;
-  onUpdateInputs: (nodeId: string, inputs: any) => void;
+  onUpdateInputs: (nodeId: string, inputs: Record<string, unknown>) => void;
   onAddNode: () => void;
 }
 
@@ -28,7 +28,7 @@ export default function HederaSellerNode({
 }: HederaSellerNodeProps) {
   const [isExpanded, setIsExpanded] = useState(true);
 
-  const handleInputChange = (field: string, value: any) => {
+  const handleInputChange = (field: string, value: unknown) => {
     onUpdateInputs(node.id, {
       ...node.inputs,
       [field]: value,

@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import {
   initializeNexusClient,
   isNexusClientInitialized,
-  getNexusClient,
 } from "../../lib/avail/nexusClient";
 import {
   executeBridge,
@@ -17,9 +16,38 @@ import {
   addExecutionLogEntry,
 } from "../../lib/api/executionLogger";
 
+interface EthereumProvider {
+  request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
+  on: (event: string, handler: (...args: unknown[]) => void) => void;
+  removeListener: (event: string, handler: (...args: unknown[]) => void) => void;
+}
+
+interface NodeInput {
+  [key: string]: string | number | boolean | undefined;
+}
+
+interface WorkflowNode {
+  id: string;
+  type: string;
+  title: string;
+  inputs?: NodeInput;
+}
+
+interface LogEntry {
+  nodeId: string;
+  nodeTitle: string;
+  timestamp: string;
+  status: 'success' | 'error';
+  input: NodeInput;
+  output?: unknown;
+  txHash?: string;
+  error?: string;
+  [key: string]: unknown;
+}
+
 interface ExecuteResult {
   success: boolean;
-  logs: any[];
+  logs: LogEntry[];
   error?: string;
   txHashes?: string[];
 }
@@ -33,8 +61,8 @@ export default function AvailExecutor() {
 
   // Listen for account changes
   useEffect(() => {
-    if (typeof window !== "undefined" && (window as any).ethereum) {
-      const provider = (window as any).ethereum;
+    if (typeof window !== "undefined" && window.ethereum) {
+      const provider = window.ethereum;
 
       const handleAccountsChanged = (accounts: string[]) => {
         if (accounts.length === 0) {
@@ -56,13 +84,13 @@ export default function AvailExecutor() {
   }, [walletConnected, walletAddress]);
 
   const connectWallet = async (): Promise<boolean> => {
-    if (typeof window === "undefined" || !(window as any).ethereum) {
+    if (typeof window === "undefined" || !window.ethereum) {
       alert("Please install MetaMask or another Web3 wallet");
       return false;
     }
 
     try {
-      const provider = (window as any).ethereum;
+      const provider = window.ethereum;
 
       // Always request accounts to show MetaMask account selector
       // This allows user to choose which wallet to connect
@@ -113,7 +141,7 @@ export default function AvailExecutor() {
     if (isNexusClientInitialized()) {
       try {
         const { resetNexusClient } = await import(
-          "../../../lib/avail/nexusClient"
+          "../../lib/avail/nexusClient"
         );
         await resetNexusClient();
         console.log("🔌 Nexus SDK deinitialized");
@@ -134,7 +162,7 @@ export default function AvailExecutor() {
     disconnectWallet,
     executeWorkflow: async (
       workflowId: string,
-      nodes: any[]
+      nodes: WorkflowNode[]
     ): Promise<ExecuteResult> => {
       return executeAvailWorkflow(
         workflowId,
@@ -151,11 +179,11 @@ export default function AvailExecutor() {
  */
 export async function executeAvailWorkflow(
   workflowId: string,
-  nodes: any[],
+  nodes: WorkflowNode[],
   walletConnected: boolean,
   connectWallet: () => Promise<boolean>
 ): Promise<ExecuteResult> {
-  const logs: any[] = [];
+  const logs: LogEntry[] = [];
   const txHashes: string[] = [];
 
   try {
@@ -180,9 +208,9 @@ export async function executeAvailWorkflow(
         "⚠️ This creates your Chain Abstraction account (one-time setup)"
       );
 
-      if (typeof window !== "undefined" && (window as any).ethereum) {
+      if (typeof window !== "undefined" && window.ethereum) {
         try {
-          await initializeNexusClient((window as any).ethereum);
+          await initializeNexusClient(window.ethereum);
           console.log("✅ Nexus SDK initialized successfully!");
         } catch (error) {
           if (
@@ -337,7 +365,7 @@ export async function executeAvailWorkflow(
 /**
  * Execute an Avail Bridge node
  */
-async function executeAvailBridgeNode(node: any) {
+async function executeAvailBridgeNode(node: WorkflowNode) {
   const { sourceChain, targetChain, token, amount } = node.inputs || {};
 
   if (!sourceChain || !targetChain || !token || !amount) {
@@ -355,10 +383,10 @@ async function executeAvailBridgeNode(node: any) {
   );
 
   const result = await executeBridge({
-    sourceChain,
-    targetChain,
-    token,
-    amount,
+    sourceChain: String(sourceChain),
+    targetChain: String(targetChain),
+    token: String(token),
+    amount: String(amount),
   });
 
   if (!result.success) {
@@ -371,7 +399,7 @@ async function executeAvailBridgeNode(node: any) {
 /**
  * Execute an Avail Bridge & Execute node
  */
-async function executeAvailBridgeExecuteNode(node: any) {
+async function executeAvailBridgeExecuteNode(node: WorkflowNode) {
   const {
     sourceChain,
     targetChain,
@@ -407,21 +435,21 @@ async function executeAvailBridgeExecuteNode(node: any) {
   let parsedParams;
   try {
     parsedParams = executeFunctionParams
-      ? JSON.parse(executeFunctionParams)
+      ? JSON.parse(String(executeFunctionParams))
       : [];
-  } catch (error) {
+  } catch {
     throw new Error("Invalid function parameters JSON");
   }
 
   const result = await executeBridgeAndExecute({
-    sourceChain,
-    targetChain,
-    token,
-    amount,
-    executeContract,
-    executeFunction,
+    sourceChain: String(sourceChain),
+    targetChain: String(targetChain),
+    token: String(token),
+    amount: String(amount),
+    executeContract: String(executeContract),
+    executeFunction: String(executeFunction),
     executeFunctionParams: parsedParams,
-    executeValue,
+    executeValue: executeValue ? String(executeValue) : undefined,
   });
 
   if (!result.success) {

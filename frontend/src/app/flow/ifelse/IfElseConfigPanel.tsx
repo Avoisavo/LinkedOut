@@ -9,14 +9,17 @@ interface Condition {
   value: string;
 }
 
+interface IfElseNodeData {
+  conditions?: Condition[];
+  convertTypes?: boolean;
+  [key: string]: unknown;
+}
+
 interface IfElseConfigPanelProps {
   isOpen: boolean;
   onClose: () => void;
-  nodeData?: {
-    conditions?: Condition[];
-    convertTypes?: boolean;
-  };
-  onSave?: (data: any) => void;
+  nodeData?: IfElseNodeData;
+  onSave?: (data: IfElseNodeData) => void;
 }
 
 export default function IfElseConfigPanel({ 

@@ -48,7 +48,7 @@ export const SUPPORTED_CHAINS: Record<string, ChainConfig> = {
  * Initialize Nexus SDK with wallet provider
  * @param provider - Injected wallet provider (MetaMask, WalletConnect, etc.)
  */
-export async function initializeNexusClient(provider: any): Promise<NexusSDK> {
+export async function initializeNexusClient(provider: Record<string, unknown> & { request: (args: { method: string }) => Promise<string> }): Promise<NexusSDK> {
   if (!provider) {
     throw new Error("Wallet provider is required to initialize Nexus SDK");
   }
@@ -117,16 +117,16 @@ export async function initializeNexusClient(provider: any): Promise<NexusSDK> {
     await client.initialize(provider);
 
     // Set up hooks for allowances and intents (required by SDK)
-    client.setOnAllowanceHook(async (data: any) => {
+    client.setOnAllowanceHook(async (data: Record<string, unknown> & { allow?: (values: string[]) => void; sources?: unknown[] }) => {
       console.log("📋 Allowance required:", data);
       // Auto-approve with max allowance for better UX
-      if (data.allow) {
+      if (data.allow && data.sources) {
         console.log("✅ Auto-approving allowances with max values...");
         data.allow(data.sources.map(() => "max"));
       }
     });
 
-    client.setOnIntentHook((data: any) => {
+    client.setOnIntentHook((data: Record<string, unknown> & { allow?: () => void }) => {
       console.log("📋 Intent data:", data);
       // Auto-approve intent for better UX
       if (data.allow) {

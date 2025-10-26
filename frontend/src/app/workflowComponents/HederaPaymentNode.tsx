@@ -9,12 +9,12 @@ interface HederaPaymentNodeProps {
     title: string;
     icon: string;
     position: { x: number; y: number };
-    inputs?: { [key: string]: any };
+    inputs?: { [key: string]: unknown };
   };
   isLast: boolean;
   onMouseDown: (e: React.MouseEvent, nodeId: string) => void;
   onDelete: (nodeId: string) => void;
-  onUpdateInputs: (nodeId: string, inputs: any) => void;
+  onUpdateInputs: (nodeId: string, inputs: Record<string, unknown>) => void;
   onAddNode: () => void;
 }
 
@@ -246,7 +246,7 @@ export default function HederaPaymentNode({
                   Payment History ({inputs.paymentHistory.length})
                 </h4>
                 <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {inputs.paymentHistory.map((payment: any, idx: number) => (
+                  {inputs.paymentHistory.map((payment: Record<string, unknown>, idx: number) => (
                     <div
                       key={idx}
                       className="px-3 py-2 rounded-lg text-xs"

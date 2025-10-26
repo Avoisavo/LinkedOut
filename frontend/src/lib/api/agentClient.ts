@@ -7,16 +7,16 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 export interface AgentStatus {
   telegram: {
     running: boolean;
-    activeChats: any[];
-    pendingNotifications: any[];
+    activeChats: Record<string, unknown>[];
+    pendingNotifications: Record<string, unknown>[];
   };
   aiDecision: {
     running: boolean;
   };
   bridgeExecutor: {
     running: boolean;
-    pendingExecutions: any[];
-    executionHistory: any[];
+    pendingExecutions: Record<string, unknown>[];
+    executionHistory: Record<string, unknown>[];
   };
   timestamp: string;
 }
@@ -34,7 +34,7 @@ export interface Notification {
   message: string;
   level?: string;
   shouldExecuteBridge?: boolean;
-  bridgeParams?: any;
+  bridgeParams?: Record<string, unknown>;
   timestamp: string;
 }
 
@@ -71,7 +71,7 @@ export async function getAgentStatus(): Promise<AgentStatus> {
 /**
  * Start all agents
  */
-export async function startAgents(): Promise<{ message: string; agents: any }> {
+export async function startAgents(): Promise<{ message: string; agents: Record<string, unknown> }> {
   const response = await fetch(`${API_URL}/api/agents/start`, {
     method: "POST",
   });

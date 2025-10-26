@@ -2,11 +2,18 @@
 
 import React, { useState } from 'react';
 
+interface GmailNodeData {
+  emailTo?: string;
+  emailSubject?: string;
+  emailBody?: string;
+  [key: string]: unknown;
+}
+
 interface GmailConfigPanelProps {
   isOpen: boolean;
   onClose: () => void;
-  nodeData?: any;
-  onSave: (data: any) => void;
+  nodeData?: GmailNodeData;
+  onSave: (data: GmailNodeData) => void;
 }
 
 export default function GmailConfigPanel({

@@ -35,7 +35,7 @@ export const hederaTestnet = {
 
 declare global {
   interface Window {
-    ethereum?: any;
+    ethereum?: Record<string, unknown> & { request: (args: { method: string; params?: unknown[] }) => Promise<string[]> };
   }
 }
 
@@ -107,9 +107,9 @@ export async function switchNetwork(chainId: string): Promise<boolean> {
       params: [{ chainId }],
     });
     return true;
-  } catch (error: any) {
+  } catch (error) {
     // If the network hasn't been added to MetaMask
-    if (error.code === 4902) {
+    if (error && typeof error === 'object' && 'code' in error && error.code === 4902) {
       console.error('Network not added to wallet');
     }
     console.error('Error switching network:', error);
@@ -125,10 +125,10 @@ export async function callContractReadFunction(
   contractAddress: string,
   abi: ContractABI[],
   functionName: string,
-  args: any[] = [],
+  args: unknown[] = [],
   network: 'base' | 'hedera' = 'base',
   usePending: boolean = false
-): Promise<any> {
+): Promise<unknown> {
   try {
     const chain = network === 'base' ? baseSepoliaPreconf : hederaTestnet;
     const client = createPublicClient({
@@ -159,7 +159,7 @@ export async function callContractWriteFunction(
   contractAddress: string,
   abi: ContractABI[],
   functionName: string,
-  args: any[] = [],
+  args: unknown[] = [],
   value?: string, // in wei
   network: 'base' | 'hedera' = 'base'
 ): Promise<{ hash: string }> {
@@ -176,7 +176,7 @@ export async function callContractWriteFunction(
 
     const [address] = await walletClient.getAddresses();
     
-    const txOptions: any = {
+    const txOptions: Record<string, unknown> = {
       address: contractAddress as Address,
       abi: abi as Abi,
       functionName,
@@ -200,7 +200,7 @@ export async function callContractWriteFunction(
 /**
  * Parse function arguments based on their types
  */
-export function parseArguments(inputs: Array<{ type: string; value: string }>): any[] {
+export function parseArguments(inputs: Array<{ type: string; value: string }>): unknown[] {
   return inputs.map(({ type, value }) => {
     if (!value || value.trim() === '') {
       return undefined;
@@ -250,7 +250,7 @@ export function parseArguments(inputs: Array<{ type: string; value: string }>): 
 /**
  * Format contract return value for display
  */
-export function formatReturnValue(value: any, type?: string): string {
+export function formatReturnValue(value: unknown, type?: string): string {
   if (value === null || value === undefined) {
     return 'null';
   }

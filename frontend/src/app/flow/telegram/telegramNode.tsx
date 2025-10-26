@@ -17,7 +17,7 @@ interface TelegramNodeProps {
     parseMode?: string;
     parentNode?: {
       type: string;
-      data: any;
+      data: Record<string, unknown>;
       name: string;
     };
   };

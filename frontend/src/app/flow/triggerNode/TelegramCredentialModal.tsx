@@ -1,9 +1,17 @@
 import React, { useState, useEffect } from 'react';
 
+interface BotInfo {
+  id?: number;
+  is_bot?: boolean;
+  first_name?: string;
+  username?: string;
+  [key: string]: unknown;
+}
+
 interface TelegramCredentialModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (token: string, info: any) => void;
+  onSubmit: (token: string, info: BotInfo) => void;
 }
 
 export default function TelegramCredentialModal({
