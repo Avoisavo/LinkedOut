@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { ConnectButton } from '@rainbow-me/rainbowkit';
 
 interface HeaderProps {
   title?: string;
@@ -118,38 +119,7 @@ export default function Header({ title = 'LinkedOut', showBackButton = false }: 
 
       {/* Right Side - Connect Wallet */}
       <div className="flex items-center gap-4">
-        <button
-          className="px-6 py-2.5 rounded-lg font-semibold transition-all hover:scale-105 flex items-center gap-2"
-          style={{
-            fontFamily: "'Orbitron', sans-serif",
-            background: 'linear-gradient(135deg, rgba(100, 150, 200, 0.5), rgba(80, 120, 180, 0.6))',
-            border: '1px solid rgba(150, 180, 220, 0.4)',
-            color: '#ffffff',
-            backdropFilter: 'blur(15px)',
-            boxShadow: `
-              0 8px 24px rgba(80, 120, 180, 0.3),
-              inset 0 1px 2px rgba(255, 255, 255, 0.2),
-              0 0 30px rgba(100, 150, 200, 0.25)
-            `,
-            letterSpacing: '0.05em',
-            fontSize: '14px',
-          }}
-        >
-          <svg 
-            className="w-5 h-5" 
-            fill="none" 
-            stroke="currentColor" 
-            viewBox="0 0 24 24"
-          >
-            <path 
-              strokeLinecap="round" 
-              strokeLinejoin="round" 
-              strokeWidth={2} 
-              d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" 
-            />
-          </svg>
-          Connect Wallet
-        </button>
+        <ConnectButton />
       </div>
 
       {/* Fonts */}

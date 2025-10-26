@@ -19,6 +19,7 @@ import AIAgentConfigPanel from './aiNode/AIAgentConfigPanel';
 import IfElseNode from './ifelse/ifelse';
 import IfElseConfigPanel from './ifelse/IfElseConfigPanel';
 import BaseStartNode from './baseNode/baseStartNode';
+import HederaStartNode from './hederaNode/hederaStartNode';
 import TelegramNode from './telegram/telegramNode';
 import PythNode from './triggerNode/pythNode';
 import GmailNode from './gmailNode/gmail';
@@ -684,6 +685,8 @@ function FlowPageContent() {
           >
             {/* Render Nodes */}
             {nodes.map((node) => {
+              console.log('Rendering node:', node.id, 'Type:', node.type);
+              
               // Render AI Agent Node
               if (node.type === 'ai-agent') {
                 return (
@@ -748,6 +751,32 @@ function FlowPageContent() {
                     key={node.id}
                   >
                     <BaseStartNode
+                      id={node.id}
+                      position={node.position}
+                      isDragging={draggedNode === node.id}
+                      onMouseDown={(e) => handleNodeMouseDown(e, node.id)}
+                      onDelete={() => {
+                        setNodes((prev) => prev.filter((n) => n.id !== node.id));
+                      }}
+                      onAddConnection={() => {
+                        setParentNodeId(node.id);
+                        setIsNodePanelOpen(true);
+                      }}
+                      hasChildren={nodes.some(n => n.parentId === node.id)}
+                      data={node.data}
+                      isExecuting={executingNodeId === node.id}
+                    />
+                  </div>
+                );
+              }
+              
+              // Render Hedera Node
+              if (node.type === 'hedera') {
+                return (
+                  <div 
+                    key={node.id}
+                  >
+                    <HederaStartNode
                       id={node.id}
                       position={node.position}
                       isDragging={draggedNode === node.id}
@@ -1782,6 +1811,8 @@ function FlowPageContent() {
           }
           
           // Create a new node based on the selected node type
+          console.log('Creating new node with type:', nodeType.id, 'NodeType object:', nodeType);
+          
           const newNode: Node = {
             id: `node-${Date.now()}`,
             type: nodeType.id,
