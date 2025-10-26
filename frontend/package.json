@@ -9,6 +9,9 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@avail-project/nexus-core": "^0.0.2",
+    "@avail-project/nexus-widgets": "^0.0.5",
+    "@langchain/groq": "^1.0.0",
     "@rainbow-me/rainbowkit": "^2.2.9",
     "@react-three/drei": "^10.7.6",
     "@react-three/fiber": "^9.4.0",
@@ -16,6 +19,7 @@
     "buffer": "^6.0.3",
     "crypto-browserify": "^3.12.1",
     "ethers": "^6.15.0",
+    "hedera-agent-kit": "^3.4.0",
     "next": "15.5.5",
     "process": "^0.11.10",
     "react": "19.1.0",
@@ -23,10 +27,7 @@
     "stream-browserify": "^3.0.0",
     "three": "^0.180.0",
     "viem": "^2.38.4",
-    "wagmi": "^2.18.2",
-    "@avail-project/nexus-widgets": "^0.0.5",
-    "@langchain/groq": "^1.0.0",
-    "hedera-agent-kit": "^3.4.0"
+    "wagmi": "^2.18.2"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

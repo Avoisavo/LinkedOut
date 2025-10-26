@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useAccount, useWalletClient } from 'wagmi';
 import { BrowserProvider } from 'ethers';
+import { initializeNexusClient, isNexusClientInitialized } from '@/lib/avail/nexusClient';
+import { executeBridge } from '@/lib/avail/bridgeExecutor';
 
 interface AvailConfigPanelProps {
   isOpen: boolean;
@@ -30,11 +32,11 @@ export default function AvailConfigPanel({
   const [activeTab, setActiveTab] = useState<'parameters' | 'settings' | 'bridge'>('parameters');
   
   // Bridge configuration state
-  const [sourceNetwork, setSourceNetwork] = useState(nodeData?.sourceNetwork || 'base-sepolia');
-  const [destinationNetwork, setDestinationNetwork] = useState(nodeData?.destinationNetwork || 'avail-da');
-  const [bridgeAmount, setBridgeAmount] = useState(nodeData?.amount || '0.001');
+  const [sourceNetwork, setSourceNetwork] = useState(nodeData?.sourceNetwork || 'ethereum-sepolia');
+  const [destinationNetwork, setDestinationNetwork] = useState(nodeData?.destinationNetwork || 'base-sepolia');
+  const [bridgeAmount, setBridgeAmount] = useState(nodeData?.amount || '0.1');
   const [recipientAddress, setRecipientAddress] = useState(nodeData?.recipientAddress || '');
-  const [tokenType, setTokenType] = useState('eth');
+  const [tokenType, setTokenType] = useState('usdc');
   
   // Balance state
   const [ethBalance, setEthBalance] = useState('0');
@@ -74,25 +76,118 @@ export default function AvailConfigPanel({
       return;
     }
 
+    if (!recipientAddress) {
+      alert('Please enter a recipient address');
+      return;
+    }
+
     setIsBridging(true);
-    setBridgeStatus('Initiating bridge...');
+    setBridgeStatus('Initializing Nexus SDK...');
 
     try {
-      // TODO: Implement actual Avail bridge logic
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Get the wallet provider from the connected wallet client (from header)
+      // This ensures we use the same wallet that's connected (MetaMask, Coinbase, etc.)
+      const provider = await walletClient.transport;
       
-      setBridgeStatus('Bridge successful!');
-      alert(`Bridge initiated!\n\nFrom: ${sourceNetwork}\nTo: ${destinationNetwork}\nAmount: ${bridgeAmount}`);
-      
-      // Refresh balances
-      await fetchBalances();
+      // Step 1: Initialize Avail Nexus SDK if not already initialized
+      if (!isNexusClientInitialized()) {
+        setBridgeStatus('Please approve signature in your wallet...');
+        console.log('🔧 Initializing Avail Nexus SDK (@avail-project/nexus-core)...');
+        console.log('⚠️ You will need to approve a signature in your connected wallet (one-time setup)');
+        console.log('ℹ️ This creates your Chain Abstraction account for crosschain intents');
+        console.log('ℹ️ Using wallet:', walletClient.account.address);
+        
+        // Use the wallet client's transport as provider
+        // This uses whichever wallet is connected from the header (MetaMask, Coinbase, etc.)
+        if (typeof window !== 'undefined' && (window as any).ethereum) {
+          // Use window.ethereum but ensure it's the right one
+          const ethereum = (window as any).ethereum;
+          
+          // If there are multiple wallets, try to select the right one
+          if (ethereum.providers?.length) {
+            console.log('🔍 Multiple wallets detected, using connected wallet...');
+            // Use the wallet that matches the connected address
+            const matchingProvider = ethereum.providers.find((p: any) => 
+              p.selectedAddress?.toLowerCase() === address?.toLowerCase()
+            );
+            await initializeNexusClient(matchingProvider || ethereum);
+          } else {
+            await initializeNexusClient(ethereum);
+          }
+          
+          console.log('✅ Avail Nexus SDK initialized successfully!');
+        } else {
+          throw new Error('Wallet not found. Please connect your wallet via the header.');
+        }
+      } else {
+        console.log('✅ Avail Nexus SDK already initialized');
+      }
+
+      // Step 2: Execute bridge using Avail Nexus SDK
+      setBridgeStatus('Executing Avail Nexus bridge...');
+      console.log('🌉 Starting Avail Nexus bridge from ETH Sepolia → Base Sepolia:');
+      console.log('  📍 Source:', sourceNetwork, '(auto-detected from your MetaMask)');
+      console.log('  📍 Destination:', destinationNetwork);
+      console.log('  💰 Token:', tokenType.toUpperCase());
+      console.log('  💵 Amount:', bridgeAmount);
+      console.log('  📮 Recipient:', recipientAddress);
+
+      // Map UI network IDs to Nexus SDK format
+      const networkMap: Record<string, string> = {
+        'base-sepolia': 'base',
+        'ethereum-sepolia': 'sepolia',
+        'polygon-mumbai': 'polygon',
+        'arbitrum-sepolia': 'arbitrum',
+        'optimism-sepolia': 'optimism',
+      };
+
+      const targetChain = networkMap[destinationNetwork] || destinationNetwork;
+
+      // Execute bridge via Avail Nexus SDK
+      // This uses nexusClient.bridge() under the hood
+      const result = await executeBridge({
+        sourceChain: 'sepolia', // Auto-detected by SDK from MetaMask
+        targetChain: targetChain,
+        token: tokenType.toUpperCase(),
+        amount: bridgeAmount,
+      });
+
+      if (result.success) {
+        setBridgeStatus('✅ Bridge successful!');
+        console.log('✅ Bridge result:', result);
+        
+        alert(
+          `✅ Bridge Successful!\n\n` +
+          `From: ${sourceNetwork}\n` +
+          `To: ${destinationNetwork}\n` +
+          `Amount: ${bridgeAmount} ${tokenType.toUpperCase()}\n` +
+          `Recipient: ${recipientAddress}\n\n` +
+          `${result.message}\n\n` +
+          `Note: Crosschain bridges take 10-15 minutes to complete.`
+        );
+        
+        // Refresh balances
+        setTimeout(() => fetchBalances(), 2000);
+      } else {
+        throw new Error(result.error || 'Bridge failed');
+      }
     } catch (error: any) {
-      console.error('Bridge error:', error);
-      setBridgeStatus('Bridge failed');
-      alert(`Bridge failed: ${error.message}`);
+      console.error('❌ Bridge error:', error);
+      setBridgeStatus('❌ Bridge failed');
+      
+      let errorMessage = error.message || 'Unknown error';
+      
+      // Provide helpful error messages
+      if (errorMessage.includes('User rejected')) {
+        errorMessage = 'You rejected the signature. Please try again and approve the MetaMask prompt.';
+      } else if (errorMessage.includes('insufficient funds')) {
+        errorMessage = 'Insufficient funds for this transaction. Please check your balance.';
+      }
+      
+      alert(`❌ Bridge Failed\n\n${errorMessage}\n\nCheck the console for more details.`);
     } finally {
       setIsBridging(false);
-      setTimeout(() => setBridgeStatus(null), 3000);
+      setTimeout(() => setBridgeStatus(null), 5000);
     }
   };
 
@@ -112,11 +207,14 @@ export default function AvailConfigPanel({
   if (!isOpen) return null;
 
   const networks = [
-    { id: 'base-sepolia', name: 'Base Sepolia', logo: '/baselogo.png' },
-    { id: 'ethereum-sepolia', name: 'Ethereum Sepolia', logo: '/eth-logo.png' },
-    { id: 'polygon-mumbai', name: 'Polygon Mumbai', logo: '/polygon-logo.png' },
-    { id: 'avail-da', name: 'Avail DA', logo: '/availlogo.png' },
-    { id: 'avail-testnet', name: 'Avail Testnet', logo: '/availlogo.png' },
+    // Source networks (Nexus SDK auto-detects from wallet)
+    { id: 'ethereum-sepolia', name: 'Ethereum Sepolia (Source)', logo: '/eth-logo.png', isSource: true },
+    
+    // Destination networks (supported by Nexus testnet)
+    { id: 'base-sepolia', name: 'Base Sepolia', logo: '/baselogo.png', isSource: false },
+    { id: 'polygon-mumbai', name: 'Polygon Amoy', logo: '/polygon-logo.png', isSource: false },
+    { id: 'arbitrum-sepolia', name: 'Arbitrum Sepolia', logo: '/arbitrum-logo.png', isSource: false },
+    { id: 'optimism-sepolia', name: 'Optimism Sepolia', logo: '/optimism-logo.png', isSource: false },
   ];
 
   return (
@@ -358,7 +456,10 @@ export default function AvailConfigPanel({
                   </svg>
                   <div>
                     <p className="text-sm font-medium" style={{ color: '#065f46' }}>
-                      Configure your Avail bridge parameters. Select source and destination networks, specify the amount, and provide recipient details.
+                      <strong>Avail Nexus SDK Integration</strong>
+                    </p>
+                    <p className="text-xs mt-1" style={{ color: '#065f46' }}>
+                      Bridge tokens between Ethereum Sepolia and L2 networks (Base, Polygon, Arbitrum, Optimism) using intent-based crosschain operations. The SDK auto-detects your wallet&apos;s network.
                     </p>
                   </div>
                 </div>
@@ -383,14 +484,14 @@ export default function AvailConfigPanel({
                       fontSize: '14px',
                     }}
                   >
-                    {networks.filter(n => !n.id.includes('avail')).map(network => (
+                    {networks.filter(n => n.isSource).map(network => (
                       <option key={network.id} value={network.id}>
                         {network.name}
                       </option>
                     ))}
                   </select>
                   <p className="text-xs text-gray-500 mt-1">
-                    The blockchain network you&apos;re bridging from
+                    The blockchain network you&apos;re bridging from (auto-detected by SDK)
                   </p>
                 </div>
 
@@ -414,14 +515,14 @@ export default function AvailConfigPanel({
                       fontSize: '14px',
                     }}
                   >
-                    {networks.filter(n => n.id.includes('avail')).map(network => (
+                    {networks.filter(n => !n.isSource).map(network => (
                       <option key={network.id} value={network.id}>
                         {network.name}
                       </option>
                     ))}
                   </select>
                   <p className="text-xs text-gray-500 mt-1">
-                    The Avail network you&apos;re bridging to
+                    The Layer 2 network you&apos;re bridging to (via Avail Nexus)
                   </p>
                 </div>
 
@@ -448,7 +549,6 @@ export default function AvailConfigPanel({
                     <option value="eth">ETH</option>
                     <option value="usdc">USDC</option>
                     <option value="usdt">USDT</option>
-                    <option value="avail">AVAIL</option>
                   </select>
                   <p className="text-xs text-gray-500 mt-1">
                     The token you want to bridge
@@ -493,19 +593,32 @@ export default function AvailConfigPanel({
                   >
                     Recipient Address <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="text"
-                    value={recipientAddress}
-                    onChange={(e) => setRecipientAddress(e.target.value)}
-                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-green-500 focus:outline-none"
-                    style={{
-                      fontFamily: "'Monaco', 'Courier New', monospace",
-                      fontSize: '13px',
-                    }}
-                    placeholder="0x..."
-                  />
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={recipientAddress}
+                      onChange={(e) => setRecipientAddress(e.target.value)}
+                      className="flex-1 px-4 py-3 rounded-lg border border-gray-300 focus:border-green-500 focus:outline-none"
+                      style={{
+                        fontFamily: "'Monaco', 'Courier New', monospace",
+                        fontSize: '13px',
+                      }}
+                      placeholder="0x..."
+                    />
+                    <button
+                      onClick={() => address && setRecipientAddress(address)}
+                      className="px-4 py-2 rounded-lg text-sm font-medium hover:opacity-80 transition-opacity whitespace-nowrap"
+                      style={{
+                        background: 'linear-gradient(135deg, #00C896, #00B884)',
+                        color: 'white',
+                      }}
+                      disabled={!address}
+                    >
+                      Use My Address
+                    </button>
+                  </div>
                   <p className="text-xs text-gray-500 mt-1">
-                    The address on Avail that will receive the tokens
+                    The address on <strong>{networks.find(n => n.id === destinationNetwork)?.name}</strong> that will receive the tokens (same address across chains)
                   </p>
                 </div>
 
@@ -612,6 +725,60 @@ export default function AvailConfigPanel({
 
             {activeTab === 'bridge' && (
               <div className="max-w-3xl space-y-6">
+                {/* Avail Nexus Info Banner */}
+                <div
+                  className="p-4 rounded-lg flex items-start gap-3"
+                  style={{
+                    background: 'linear-gradient(135deg, #d1fae5, #a7f3d0)',
+                    border: '2px solid #6ee7b7',
+                  }}
+                >
+                  <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center flex-shrink-0">
+                    <img src="/availlogo.png" alt="Avail" className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold mb-1" style={{ color: '#065f46' }}>
+                      🚀 Powered by Avail Nexus SDK
+                    </p>
+                    <p className="text-xs" style={{ color: '#047857' }}>
+                      This bridge uses <strong>@avail-project/nexus-core</strong> for intent-based crosschain operations. 
+                      Connect your wallet (via header) on <strong>Ethereum Sepolia</strong>, and tokens will be bridged to <strong>Base Sepolia</strong> in one transaction!
+                    </p>
+                    <p className="text-xs mt-2" style={{ color: '#047857' }}>
+                      ℹ️ Source chain is auto-detected from your wallet. First-time users will sign once to create a Chain Abstraction account.
+                    </p>
+                    {address && (
+                      <p className="text-xs mt-2 font-mono" style={{ color: '#047857' }}>
+                        📝 Connected: {address.slice(0, 6)}...{address.slice(-4)}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Multiple Wallets Warning */}
+                {typeof window !== 'undefined' && (window as any).ethereum?.providers?.length > 1 && (
+                  <div
+                    className="p-3 rounded-lg flex items-start gap-2"
+                    style={{
+                      background: '#fef3c7',
+                      border: '1px solid #fcd34d',
+                    }}
+                  >
+                    <svg className="w-5 h-5 mt-0.5 flex-shrink-0" fill="#f59e0b" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    <div>
+                      <p className="text-xs font-semibold" style={{ color: '#92400e' }}>
+                        Multiple Wallets Detected
+                      </p>
+                      <p className="text-xs mt-1" style={{ color: '#78350f' }}>
+                        We&apos;ve detected multiple wallet extensions (MetaMask, Coinbase, etc.). 
+                        The bridge will use the wallet you connected from the header. If you want to use a different wallet, disconnect and reconnect with the correct one.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 {/* Wallet Connection Status */}
                 {!isConnected ? (
                   <div
@@ -629,12 +796,50 @@ export default function AvailConfigPanel({
                         Wallet Not Connected
                       </h3>
                     </div>
-                    <p className="text-sm" style={{ color: '#7f1d1d' }}>
-                      Please connect your wallet to use the Avail bridge functionality.
+                    <p className="text-sm mb-2" style={{ color: '#7f1d1d' }}>
+                      Please click <strong>&quot;Connect Wallet&quot;</strong> in the header and connect to MetaMask.
+                    </p>
+                    <p className="text-xs" style={{ color: '#991b1b' }}>
+                      Make sure you&apos;re on <strong>Ethereum Sepolia</strong> testnet to bridge to Base Sepolia.
                     </p>
                   </div>
                 ) : (
                   <>
+                    {/* Connected Wallet Status */}
+                    <div
+                      className="p-4 rounded-lg"
+                      style={{
+                        background: '#f0fdf4',
+                        border: '1px solid #86efac',
+                      }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                            <svg className="w-5 h-5" fill="#10b981" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                          <div>
+                            <p className="text-xs font-semibold" style={{ color: '#065f46' }}>
+                              ✅ MetaMask Connected
+                            </p>
+                            <p className="text-xs font-mono" style={{ color: '#047857' }}>
+                              {address ? `${address.slice(0, 6)}...${address.slice(-4)}` : 'Unknown'}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xs font-semibold" style={{ color: '#065f46' }}>
+                            Network
+                          </p>
+                          <p className="text-xs" style={{ color: '#047857' }}>
+                            Ethereum Sepolia
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
                     {/* Balance Display */}
                     <div
                       className="p-6 rounded-lg"
