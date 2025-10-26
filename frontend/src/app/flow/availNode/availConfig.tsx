@@ -108,66 +108,20 @@ export default function AvailConfigPanel({
             
             // Check if on Ethereum Sepolia (11155111)
             if (chainIdDecimal !== 11155111) {
-              console.log('❌ Wrong network detected. Attempting to switch to Ethereum Sepolia...');
-              
-              try {
-                // Try to switch to Ethereum Sepolia
-                await ethereum.request({
-                  method: 'wallet_switchEthereumChain',
-                  params: [{ chainId: '0xaa36a7' }], // 11155111 in hex
-                });
-                console.log('✅ Successfully switched to Ethereum Sepolia');
-                
-                // Wait a bit for the switch to complete
-                await new Promise(resolve => setTimeout(resolve, 1000));
-              } catch (switchError: any) {
-                // This error code indicates that the chain has not been added to MetaMask
-                if (switchError.code === 4902) {
-                  console.log('📝 Ethereum Sepolia not found in wallet. Adding...');
-                  try {
-                    await ethereum.request({
-                      method: 'wallet_addEthereumChain',
-                      params: [{
-                        chainId: '0xaa36a7',
-                        chainName: 'Ethereum Sepolia',
-                        nativeCurrency: {
-                          name: 'Sepolia ETH',
-                          symbol: 'ETH',
-                          decimals: 18
-                        },
-                        rpcUrls: ['https://rpc.sepolia.org'],
-                        blockExplorerUrls: ['https://sepolia.etherscan.io']
-                      }]
-                    });
-                    console.log('✅ Ethereum Sepolia added and switched');
-                  } catch (addError) {
-                    throw new Error(
-                      `❌ Failed to add Ethereum Sepolia to your wallet.\n\n` +
-                      `Please manually add Ethereum Sepolia:\n` +
-                      `• Chain ID: 11155111\n` +
-                      `• RPC URL: https://rpc.sepolia.org\n` +
-                      `• Symbol: ETH`
-                    );
-                  }
-                } else {
-                  throw new Error(
-                    `❌ Failed to switch to Ethereum Sepolia!\n\n` +
-                    `You are currently on chain ID: ${chainIdDecimal}\n` +
-                    `Avail Nexus requires: Ethereum Sepolia (11155111)\n\n` +
-                    `Please manually switch to Ethereum Sepolia in your wallet and try again.\n\n` +
-                    `Error: ${switchError.message || 'User rejected network switch'}`
-                  );
-                }
-              }
-            } else {
-              console.log('✅ Correct network: Ethereum Sepolia');
+              throw new Error(
+                `❌ Wrong network detected!\n\n` +
+                `You are on chain ID: ${chainIdDecimal}\n` +
+                `Avail Nexus requires: Ethereum Sepolia (11155111)\n\n` +
+                `Please switch to Ethereum Sepolia in your wallet and try again.`
+              );
             }
+            
+            console.log('✅ Correct network: Ethereum Sepolia');
           } catch (error: any) {
-            if (error.message.includes('Failed to switch') || error.message.includes('Failed to add')) {
+            if (error.message.includes('Wrong network')) {
               throw error;
             }
-            console.warn('⚠️ Could not verify/switch network:', error.message);
-            throw error;
+            console.warn('⚠️ Could not verify network, proceeding anyway...');
           }
           
           // If there are multiple wallets, try to select the right one
@@ -245,36 +199,12 @@ export default function AvailConfigPanel({
       }
     } catch (error: any) {
       console.error('❌ Bridge error:', error);
-      console.error('❌ Error type:', typeof error);
-      console.error('❌ Error name:', error?.name);
-      console.error('❌ Error message:', error?.message);
-      console.error('❌ Error stack:', error?.stack);
-      
-      // Log full error object
-      if (typeof error === 'object' && error !== null) {
-        console.error('❌ Full error object:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
-      }
-      
       setBridgeStatus('❌ Bridge failed');
       
       let errorMessage = error.message || 'Unknown error';
       
       // Provide helpful error messages
-      if (errorMessage.includes('deadline exceeded') || errorMessage.includes('timeout')) {
-        errorMessage = 
-          '⏱️ Bridge Timeout Error\n\n' +
-          'The Avail Nexus testnet took too long to respond.\n\n' +
-          'This usually means:\n' +
-          '• The testnet is slow or congested\n' +
-          '• Network connectivity issues\n' +
-          '• Backend is overloaded\n\n' +
-          'Solutions:\n' +
-          '✅ Wait 2-3 minutes and try again\n' +
-          '✅ Try a smaller amount (e.g., 0.001 ETH)\n' +
-          '✅ Check your internet connection\n' +
-          '✅ Use LayerZero bridge as backup\n\n' +
-          'Note: Testnets are often slow - this is normal!';
-      } else if (errorMessage.includes('User rejected')) {
+      if (errorMessage.includes('User rejected')) {
         errorMessage = 'You rejected the signature. Please try again and approve the wallet prompt.';
       } else if (errorMessage.includes('insufficient funds')) {
         errorMessage = 'Insufficient funds for this transaction. Please check your balance.';
@@ -295,15 +225,7 @@ export default function AvailConfigPanel({
         // Already has good error message
       }
       
-      alert(
-        `❌ Bridge Failed\n\n${errorMessage}\n\n` +
-        `📋 IMPORTANT: Check the browser console for detailed error information!\n\n` +
-        `To open console:\n` +
-        `• Chrome/Edge: Press F12 or Ctrl+Shift+J (Windows) / Cmd+Option+J (Mac)\n` +
-        `• Firefox: Press F12 or Ctrl+Shift+K\n` +
-        `• Safari: Enable Developer menu, then press Cmd+Option+C\n\n` +
-        `Look for red ❌ error messages with details about what went wrong.`
-      );
+      alert(`❌ Bridge Failed\n\n${errorMessage}\n\nCheck the console for more details.`);
     } finally {
       setIsBridging(false);
       setTimeout(() => setBridgeStatus(null), 5000);

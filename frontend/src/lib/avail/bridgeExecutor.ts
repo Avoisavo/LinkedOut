@@ -155,22 +155,8 @@ export async function executeBridge(
   params: BridgeParams
 ): Promise<BridgeResult> {
   try {
-    console.log("🚀 executeBridge called with params:", params);
-    
-    // Validate Nexus client is initialized
-    let nexusClient;
-    try {
-      nexusClient = getNexusClient();
-      console.log("✅ Nexus client retrieved successfully");
-    } catch (clientError) {
-      console.error("❌ Failed to get Nexus client:", clientError);
-      throw new Error(
-        "Nexus SDK not initialized. Please ensure you've connected your wallet and approved the initialization."
-      );
-    }
-    
+    const nexusClient = getNexusClient();
     const targetChainConfig = getChainConfig(params.targetChain);
-    console.log("✅ Target chain config:", targetChainConfig);
 
     // Validate amount
     const amountNum = parseFloat(params.amount);
@@ -179,7 +165,6 @@ export async function executeBridge(
         `Invalid amount: ${params.amount}. Please enter a valid positive number.`
       );
     }
-    console.log("✅ Amount validated:", amountNum);
 
     // Validate token
     const validTokens = ["ETH", "USDC", "USDT"];
@@ -190,19 +175,9 @@ export async function executeBridge(
         )}`
       );
     }
-    console.log("✅ Token validated:", params.token);
 
     // The SDK will use whatever chain you're currently on as the source
-    let currentChainId;
-    try {
-      currentChainId = await getCurrentChainId();
-      console.log("✅ Current chain ID:", currentChainId);
-    } catch (chainError) {
-      console.error("❌ Failed to get current chain ID:", chainError);
-      throw new Error(
-        "Failed to detect current network. Please ensure your wallet is connected."
-      );
-    }
+    const currentChainId = await getCurrentChainId();
     const sourceChainName =
       Object.entries(SUPPORTED_CHAINS).find(
         ([, config]) => config.chainId === currentChainId
@@ -234,12 +209,10 @@ export async function executeBridge(
 
     // Check if Nexus SDK has the bridge method
     if (typeof nexusClient.bridge !== "function") {
-      console.error("❌ Nexus SDK bridge method not found. Available methods:", Object.keys(nexusClient));
       throw new Error(
-        "Nexus SDK bridge method not available. The SDK may not be properly initialized."
+        "Nexus SDK bridge method not available. Please check the SDK integration."
       );
     }
-    console.log("✅ Nexus SDK bridge method available");
 
     console.log("📝 Preparing bridge transaction...");
     console.log("✅ Source network detected:", sourceChainName);
@@ -255,33 +228,17 @@ export async function executeBridge(
     // Store the original chain ID to detect if SDK switches networks
     const originalChainId = currentChainId;
 
-    // Prepare bridge parameters
-    const bridgeParams = {
-      chainId: targetChainConfig.chainId,
-      token: params.token,
-      amount: params.amount,
-    };
-    console.log("📋 Bridge parameters:", bridgeParams);
-
     // Use Nexus SDK to execute the bridge
     // IMPORTANT: SDK auto-detects source chain from connected wallet
     // NOTE: The SDK may automatically switch networks if the current network
     // is not an optimal source for the selected destination
-    console.log("🔄 Calling nexusClient.bridge()...");
-    let bridgeResult;
-    try {
-      bridgeResult = await nexusClient.bridge({
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        chainId: targetChainConfig.chainId as any, // Destination chain ID
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        token: params.token as any, // ETH, USDC, or USDT
-        amount: params.amount,
-      });
-      console.log("✅ Bridge SDK call completed. Result:", bridgeResult);
-    } catch (bridgeError) {
-      console.error("❌ Bridge SDK call failed:", bridgeError);
-      throw bridgeError;
-    }
+    const bridgeResult = await nexusClient.bridge({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      chainId: targetChainConfig.chainId as any, // Destination chain ID
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      token: params.token as any, // ETH, USDC, or USDT
+      amount: params.amount,
+    });
 
     // Check if network was switched during bridge
     const finalChainId = await getCurrentChainId();
@@ -354,54 +311,11 @@ export async function executeBridge(
       error instanceof Error ? error.message : "Unknown error"
     );
     console.error("  Full error:", error);
-    
-    // Log the error stack for debugging
-    if (error instanceof Error && error.stack) {
-      console.error("  Stack trace:", error.stack);
-    }
-    
-    // Log any additional error properties
-    if (typeof error === 'object' && error !== null) {
-      console.error("  Error details:", JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
-    }
-
-    let errorMessage = error instanceof Error ? error.message : "Unknown error";
-    let friendlyMessage = "Bridge operation failed. Check console for details.";
-
-    // Provide specific error messages for common issues
-    if (errorMessage.includes("deadline exceeded") || errorMessage.includes("timeout")) {
-      friendlyMessage = 
-        "⏱️ Bridge Timeout Error\n\n" +
-        "The Avail Nexus testnet took too long to respond (deadline exceeded).\n\n" +
-        "This usually means:\n" +
-        "1. 🐌 The testnet is slow or congested\n" +
-        "2. 🔄 Network connectivity issues\n" +
-        "3. 🚧 Backend is overloaded\n\n" +
-        "Solutions:\n" +
-        "✅ Wait 2-3 minutes and try again\n" +
-        "✅ Try a smaller amount first\n" +
-        "✅ Check your internet connection\n" +
-        "✅ Use a different bridge (LayerZero OFT) as backup\n\n" +
-        "Note: Testnets are often slow - this is normal!";
-      errorMessage = friendlyMessage;
-    } else if (errorMessage.includes("404") || errorMessage.includes("fee grant")) {
-      friendlyMessage = 
-        "⚠️ Avail Nexus Backend Unavailable\n\n" +
-        "The testnet fee grant service is down (404 error).\n" +
-        "Wait a few minutes and try again.";
-      errorMessage = friendlyMessage;
-    } else if (errorMessage.includes("User rejected") || errorMessage.includes("denied")) {
-      friendlyMessage = "❌ Transaction Rejected\n\nYou cancelled the transaction in your wallet.";
-      errorMessage = friendlyMessage;
-    } else if (errorMessage.includes("insufficient")) {
-      friendlyMessage = "💰 Insufficient Funds\n\nYou don't have enough balance for this transaction.";
-      errorMessage = friendlyMessage;
-    }
 
     return {
       success: false,
-      error: errorMessage,
-      message: friendlyMessage,
+      error: error instanceof Error ? error.message : "Unknown error",
+      message: "Bridge operation failed. Check console for details.",
     };
   }
 }

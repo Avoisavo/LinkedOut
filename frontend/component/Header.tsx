@@ -142,48 +142,6 @@ export default function Header({
             <>
               {isConnected ? (
                 <div className="flex items-center gap-2">
-                  {/* Network Display */}
-                  <button
-                    onClick={openChainModal}
-                    className="px-4 py-2.5 rounded-lg font-semibold transition-all hover:scale-105 flex items-center gap-2"
-                    style={{
-                      fontFamily: "'Inter', sans-serif",
-                      background:
-                        "linear-gradient(135deg, rgba(100, 120, 200, 0.5), rgba(80, 100, 180, 0.6))",
-                      border: "1px solid rgba(150, 170, 220, 0.4)",
-                      color: "#ffffff",
-                      backdropFilter: "blur(15px)",
-                      boxShadow: `0 4px 16px rgba(100, 120, 200, 0.3),
-                         inset 0 1px 2px rgba(255, 255, 255, 0.2)`,
-                      letterSpacing: "0.02em",
-                      fontSize: "13px",
-                    }}
-                  >
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"
-                      />
-                    </svg>
-                    <span>
-                      {chain?.name || "Unknown Network"}
-                    </span>
-                    <span
-                      className="text-xs opacity-75"
-                      style={{ fontSize: "11px" }}
-                    >
-                      ({chain?.id || "?"})
-                    </span>
-                  </button>
-
-                  {/* Wallet Address */}
                   <button
                     onClick={show}
                     className="px-6 py-2.5 rounded-lg font-semibold transition-all hover:scale-105 flex items-center gap-2"
@@ -211,8 +169,6 @@ export default function Header({
                         : "Connected"}
                     </span>
                   </button>
-
-                  {/* Disconnect Button */}
                   <button
                     onClick={handleDisconnect}
                     className="px-4 py-2.5 rounded-lg font-semibold transition-all hover:scale-105"
