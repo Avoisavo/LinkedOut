@@ -228,17 +228,48 @@ export async function executeBridge(
     // Store the original chain ID to detect if SDK switches networks
     const originalChainId = currentChainId;
 
-    // Use Nexus SDK to execute the bridge
+    // Use Nexus SDK to execute the bridge with timeout handling
     // IMPORTANT: SDK auto-detects source chain from connected wallet
     // NOTE: The SDK may automatically switch networks if the current network
     // is not an optimal source for the selected destination
-    const bridgeResult = await nexusClient.bridge({
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      chainId: targetChainConfig.chainId as any, // Destination chain ID
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      token: params.token as any, // ETH, USDC, or USDT
-      amount: params.amount,
-    });
+    let bridgeResult;
+    try {
+      console.log("🌉 Calling Nexus SDK bridge method...");
+      console.log("⏳ This may take 30-60 seconds, please be patient...");
+      
+      bridgeResult = await nexusClient.bridge({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        chainId: targetChainConfig.chainId as any, // Destination chain ID
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        token: params.token as any, // ETH, USDC, or USDT
+        amount: params.amount,
+      });
+    } catch (bridgeError: any) {
+      // Handle timeout errors specifically
+      if (
+        bridgeError.message?.includes("deadline exceeded") ||
+        bridgeError.message?.includes("timeout") ||
+        bridgeError.message?.includes("context deadline")
+      ) {
+        throw new Error(
+          "⏱️ Bridge Transaction Timed Out\n\n" +
+          "The Avail Nexus backend took too long to respond (timeout error).\n\n" +
+          "Common causes:\n" +
+          "1. 🐌 Testnet backend is slow or overloaded\n" +
+          "2. 🌐 Network connectivity issues\n" +
+          "3. ⚠️ Testnet infrastructure is under heavy load\n\n" +
+          "Solutions:\n" +
+          "✅ Wait 2-3 minutes and try again\n" +
+          "✅ Check your internet connection\n" +
+          "✅ Try reducing the bridge amount\n" +
+          "✅ The testnet may be experiencing high traffic\n\n" +
+          "Note: This is a testnet infrastructure issue, not your code!\n\n" +
+          `Technical error: ${bridgeError.message}`
+        );
+      }
+      // Re-throw other errors
+      throw bridgeError;
+    }
 
     // Check if network was switched during bridge
     const finalChainId = await getCurrentChainId();

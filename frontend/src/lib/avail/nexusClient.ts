@@ -114,7 +114,27 @@ export async function initializeNexusClient(provider: any): Promise<NexusSDK> {
     console.log(
       "⚠️ IMPORTANT: Approve the MetaMask signature request to create your Chain Abstraction account"
     );
-    await client.initialize(provider);
+    
+    try {
+      await client.initialize(provider);
+    } catch (initError: any) {
+      // Check if it's the 404 fee grant error
+      if (initError.message?.includes('404') || initError.message?.includes('fee grant')) {
+        throw new Error(
+          '⚠️ Avail Nexus Testnet Backend Issue\n\n' +
+          'The Nexus testnet fee grant service is currently unavailable (404 error).\n\n' +
+          'This is a known testnet infrastructure issue. Solutions:\n\n' +
+          '1. ✅ Verify you\'re on Ethereum Sepolia (Chain ID: 11155111)\n' +
+          '2. ⏰ Wait 5-10 minutes and try again\n' +
+          '3. 💬 Check Avail Discord for testnet status updates\n' +
+          '4. 🔄 The testnet may be under maintenance\n\n' +
+          'Note: This is NOT a problem with your code or wallet connection!\n\n' +
+          `Original error: ${initError.message}`
+        );
+      }
+      // Re-throw other errors
+      throw initError;
+    }
 
     // Set up hooks for allowances and intents (required by SDK)
     client.setOnAllowanceHook(async (data: any) => {
