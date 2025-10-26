@@ -7,7 +7,8 @@ const OFT_ABI = [
   'function quoteSend((uint32 dstEid, bytes32 to, uint256 amountLD, uint256 minAmountLD, bytes extraOptions, bytes composeMsg, bytes oftCmd) _sendParam, bool _payInLzToken) view returns (tuple(uint256 nativeFee, uint256 lzTokenFee) fee)',
 ];
 
-// Configuration
+// Configuration (matching auto-bridge-base-to-hedera.js)
+// sc address
 const BASE_OFT_ADDRESS = "0x612F53C77972F2ACaD4Bfc2D9b64cD255326aE3a";
 const BASE_SEPOLIA_CHAIN_ID = 84532;
 const HEDERA_EID = 40285; // LayerZero endpoint ID for Hedera

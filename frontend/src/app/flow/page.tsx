@@ -132,10 +132,10 @@ function FlowPageContent() {
   const { address, isConnected } = useAccount();
   const { data: walletClient } = useWalletClient();
   
-  // Bridge configuration
+  // Bridge configuration (matching auto-bridge-base-to-hedera.js)
   const BRIDGE_CONFIG = {
     recipientAddress: '0xfEC6BB7506B4c06ddA315c8C12ED030eb05bdE28',
-    amount: '0.001',
+    amount: '0.0001', // Updated to match the script default
     telegramBotToken: '8315860340:AAHrM96vOHlZ8jRJtU6Q0GrHTZWIwjn2jA0',
     telegramChatId: '', // Will be populated from workflow data
   };
@@ -308,9 +308,9 @@ function FlowPageContent() {
       const currentNode = nodes.find(n => n.id === nodeId);
       setExecutingNodeId(nodeId);
       
-      // If this is a base node, execute the bridge
-      if (currentNode?.type === 'base') {
-        console.log('🌉 Executing bridge for base node:', nodeId);
+      // If this is a base or hedera node, execute the bridge
+      if (currentNode?.type === 'base' || currentNode?.type === 'hedera') {
+        console.log('🌉 Executing bridge for node:', currentNode.type, nodeId);
         await executeBridgeForNode(currentNode);
       }
       

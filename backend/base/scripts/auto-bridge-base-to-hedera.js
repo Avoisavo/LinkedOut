@@ -7,9 +7,9 @@ async function main() {
     const [signer] = await ethers.getSigners();
     
     // Configuration
-    const BASE_SEPOLIA_OFT = "0x82A16c0a82452aD07aae296b3E408d6Bcd9C3adf";
+    const BASE_SEPOLIA_OFT = "0x612F53C77972F2ACaD4Bfc2D9b64cD255326aE3a";
     const RECIPIENT_ADDRESS = "0xfEC6BB7506B4c06ddA315c8C12ED030eb05bdE28";
-    const AMOUNT_TO_BRIDGE = "0.005"; // 0.5 tokens
+    const AMOUNT_TO_BRIDGE = "0.0001"; // 0.5 tokens
     
     console.log("\n╔════════════════════════════════════════════════════════╗");
     console.log("║     Automated Bridge: Base Sepolia → Hedera           ║");

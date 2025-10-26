@@ -8,7 +8,7 @@ async function main() {
     
     const BASE_OFT_ADDRESS = "0x612F53C77972F2ACaD4Bfc2D9b64cD255326aE3a";
     const HEDERA_RECIPIENT = "0xfEC6BB7506B4c06ddA315c8C12ED030eb05bdE28";
-    const AMOUNT = "0.001";
+    const AMOUNT = "0.0001";
     
     console.log("\n╔════════════════════════════════════════╗");
     console.log("║   BRIDGE: Base Sepolia → Hedera        ║");
