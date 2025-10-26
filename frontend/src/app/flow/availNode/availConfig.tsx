@@ -97,11 +97,32 @@ export default function AvailConfigPanel({
         console.log('ℹ️ This creates your Chain Abstraction account for crosschain intents');
         console.log('ℹ️ Using wallet:', walletClient.account.address);
         
-        // Use the wallet client's transport as provider
-        // This uses whichever wallet is connected from the header (MetaMask, Coinbase, etc.)
+        // Check current network
         if (typeof window !== 'undefined' && (window as any).ethereum) {
-          // Use window.ethereum but ensure it's the right one
           const ethereum = (window as any).ethereum;
+          
+          try {
+            const chainId = await ethereum.request({ method: 'eth_chainId' });
+            const chainIdDecimal = parseInt(chainId, 16);
+            console.log('🌐 Current network chain ID:', chainIdDecimal);
+            
+            // Check if on Ethereum Sepolia (11155111)
+            if (chainIdDecimal !== 11155111) {
+              throw new Error(
+                `❌ Wrong network detected!\n\n` +
+                `You are on chain ID: ${chainIdDecimal}\n` +
+                `Avail Nexus requires: Ethereum Sepolia (11155111)\n\n` +
+                `Please switch to Ethereum Sepolia in your wallet and try again.`
+              );
+            }
+            
+            console.log('✅ Correct network: Ethereum Sepolia');
+          } catch (error: any) {
+            if (error.message.includes('Wrong network')) {
+              throw error;
+            }
+            console.warn('⚠️ Could not verify network, proceeding anyway...');
+          }
           
           // If there are multiple wallets, try to select the right one
           if (ethereum.providers?.length) {
@@ -110,8 +131,13 @@ export default function AvailConfigPanel({
             const matchingProvider = ethereum.providers.find((p: any) => 
               p.selectedAddress?.toLowerCase() === address?.toLowerCase()
             );
+            
+            console.log('📡 Initializing Nexus SDK with selected provider...');
+            console.log('⏳ This may take 10-20 seconds...');
             await initializeNexusClient(matchingProvider || ethereum);
           } else {
+            console.log('📡 Initializing Nexus SDK...');
+            console.log('⏳ This may take 10-20 seconds...');
             await initializeNexusClient(ethereum);
           }
           
@@ -179,9 +205,24 @@ export default function AvailConfigPanel({
       
       // Provide helpful error messages
       if (errorMessage.includes('User rejected')) {
-        errorMessage = 'You rejected the signature. Please try again and approve the MetaMask prompt.';
+        errorMessage = 'You rejected the signature. Please try again and approve the wallet prompt.';
       } else if (errorMessage.includes('insufficient funds')) {
         errorMessage = 'Insufficient funds for this transaction. Please check your balance.';
+      } else if (errorMessage.includes('404') || errorMessage.includes('fee grant')) {
+        errorMessage = 
+          '⚠️ Avail Nexus Testnet Backend Issue\n\n' +
+          'The Nexus testnet is experiencing issues (404 error when requesting fee grant).\n\n' +
+          'This could mean:\n' +
+          '1. The testnet is temporarily down\n' +
+          '2. You\'re on the wrong network (must be Ethereum Sepolia)\n' +
+          '3. The fee grant service is unavailable\n\n' +
+          'Solutions:\n' +
+          '✅ Verify you\'re on Ethereum Sepolia (Chain ID: 11155111)\n' +
+          '✅ Try again in a few minutes\n' +
+          '✅ Check Avail Discord for testnet status\n\n' +
+          'Note: This is a backend infrastructure issue, not your code!';
+      } else if (errorMessage.includes('Wrong network')) {
+        // Already has good error message
       }
       
       alert(`❌ Bridge Failed\n\n${errorMessage}\n\nCheck the console for more details.`);
@@ -778,6 +819,31 @@ export default function AvailConfigPanel({
                     </div>
                   </div>
                 )}
+
+                {/* Troubleshooting: Common 404 Error */}
+                <div
+                  className="p-3 rounded-lg"
+                  style={{
+                    background: '#fef9c3',
+                    border: '1px solid #fde047',
+                  }}
+                >
+                  <div className="flex items-start gap-2">
+                    <svg className="w-4 h-4 mt-0.5 flex-shrink-0" fill="#ca8a04" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                    <div>
+                      <p className="text-xs font-semibold" style={{ color: '#854d0e' }}>
+                        💡 Troubleshooting: If you get a 404 error
+                      </p>
+                      <p className="text-xs mt-1" style={{ color: '#713f12' }}>
+                        If the bridge fails with a &quot;404 fee grant&quot; error, it means the Avail Nexus testnet backend is experiencing issues. 
+                        <strong> Make sure you&apos;re on Ethereum Sepolia (Chain ID: 11155111)</strong> and try again in a few minutes. 
+                        This is a testnet infrastructure issue, not your code!
+                      </p>
+                    </div>
+                  </div>
+                </div>
 
                 {/* Wallet Connection Status */}
                 {!isConnected ? (
