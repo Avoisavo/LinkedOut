@@ -20,10 +20,15 @@ import IfElseNode from './ifelse/ifelse';
 import IfElseConfigPanel from './ifelse/IfElseConfigPanel';
 import BaseStartNode from './baseNode/baseStartNode';
 import HederaStartNode from './hederaNode/hederaStartNode';
+import AvailStartNode from './availNode/startAvailNode';
+import AvailConfigPanel from './availNode/availConfig';
 import TelegramNode from './telegram/telegramNode';
 import PythNode from './triggerNode/pythNode';
 import GmailNode from './gmailNode/gmail';
 import { saveWorkflow, getWorkflow, createNewWorkflow, WorkflowData } from '@/lib/workflowStorage';
+import AvailBridgeNode from '@/app/avail/AvailBridgeNode';
+import AvailBridgeExecuteNode from '@/app/avail/AvailBridgeExecuteNode';
+import { useAvailExecutor } from '@/app/avail/AvailExecutorWagmi';
 
 // Loading component for Suspense fallback
 function FlowPageLoading() {
@@ -120,6 +125,8 @@ function FlowPageContent() {
   const [isIfElseConfigOpen, setIsIfElseConfigOpen] = useState(false);
   const [selectedIfElseNode, setSelectedIfElseNode] = useState<Node | null>(null);
   const [selectedTelegramNode, setSelectedTelegramNode] = useState<Node | null>(null);
+  const [isAvailConfigOpen, setIsAvailConfigOpen] = useState(false);
+  const [selectedAvailNode, setSelectedAvailNode] = useState<Node | null>(null);
   const [parentNodeId, setParentNodeId] = useState<string | null>(null); // Track which node is adding a child
   const [parentBranch, setParentBranch] = useState<'true' | 'false' | null>(null); // Track which branch of IfElse node
   const [executingNodeId, setExecutingNodeId] = useState<string | null>(null); // Track which node is currently executing
@@ -127,10 +134,14 @@ function FlowPageContent() {
   const [isBridging, setIsBridging] = useState(false); // Track if bridge is executing
   const [showBridgeModal, setShowBridgeModal] = useState(false); // Show bridge modal
   const [showPaymentNotification, setShowPaymentNotification] = useState(false); // Show payment notification
+  const [showMetaMaskReminder, setShowMetaMaskReminder] = useState(false); // Show MetaMask reminder for Avail
   
   // Wallet connection
   const { address, isConnected } = useAccount();
   const { data: walletClient } = useWalletClient();
+  
+  // Avail Executor
+  const availExecutor = useAvailExecutor();
   
   // Bridge configuration (matching auto-bridge-base-to-hedera.js)
   const BRIDGE_CONFIG = {
@@ -220,11 +231,31 @@ function FlowPageContent() {
     }
   };
 
+  // Handle Avail node double click to open configuration
+  const handleAvailDoubleClick = (nodeId: string) => {
+    const node = nodes.find(n => n.id === nodeId);
+    if (node) {
+      setSelectedAvailNode(node);
+      setIsAvailConfigOpen(true);
+    }
+  };
+
   // Handle saving IfElse configuration
   const handleSaveIfElseConfig = (updatedData: any) => {
     if (selectedIfElseNode) {
       setNodes(prev => prev.map(node => 
         node.id === selectedIfElseNode.id
+          ? { ...node, data: { ...node.data, ...updatedData } }
+          : node
+      ));
+    }
+  };
+
+  // Handle saving Avail configuration
+  const handleSaveAvailConfig = (updatedData: any) => {
+    if (selectedAvailNode) {
+      setNodes(prev => prev.map(node => 
+        node.id === selectedAvailNode.id
           ? { ...node, data: { ...node.data, ...updatedData } }
           : node
       ));
@@ -278,6 +309,35 @@ function FlowPageContent() {
     if (isExecuting || nodes.length === 0) return;
     
     setIsExecuting(true);
+    
+    // Check if workflow contains Avail nodes
+    const hasAvailNodes = nodes.some(
+      (node) =>
+        node.type === 'avail-bridge' || node.type === 'avail-bridge-execute'
+    );
+
+    if (hasAvailNodes) {
+      // Show MetaMask reminder for Avail workflows
+      setShowMetaMaskReminder(true);
+
+      // Use Avail Executor for workflows with Avail nodes
+      const result = await availExecutor.executeWorkflow(
+        currentWorkflow?.id || 'temp-workflow-id',
+        nodes
+      );
+
+      setShowMetaMaskReminder(false);
+
+      if (result.success) {
+        console.log('✅ Avail workflow executed successfully');
+      } else {
+        console.error('❌ Avail workflow execution failed:', result.error);
+        alert(`Workflow execution failed: ${result.error}`);
+      }
+
+      setIsExecuting(false);
+      return;
+    }
     
     // Build execution order based on node connections, only following TRUE branches
     const executionOrder: string[] = [];
@@ -651,6 +711,52 @@ function FlowPageContent() {
       {/* Header */}
       <Header title="LinkedOut Flow" showBackButton={true} />
 
+      {/* MetaMask Approval Reminder Banner */}
+      {showMetaMaskReminder && (
+        <div
+          className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 px-6 py-4 rounded-lg shadow-2xl animate-pulse"
+          style={{
+            background:
+              "linear-gradient(135deg, rgba(255, 140, 0, 0.95), rgba(255, 100, 0, 0.95))",
+            border: "2px solid rgba(255, 200, 100, 0.6)",
+            boxShadow: "0 8px 32px rgba(255, 140, 0, 0.5)",
+            maxWidth: "500px",
+          }}
+        >
+          <div className="flex items-center gap-3">
+            <div
+              className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0"
+              style={{
+                background: "rgba(255, 255, 255, 0.2)",
+                border: "2px solid rgba(255, 255, 255, 0.5)",
+              }}
+            >
+              <svg
+                className="w-7 h-7 text-white"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
+              </svg>
+            </div>
+            <div>
+              <p
+                className="font-bold text-white mb-1"
+                style={{
+                  fontFamily: "'Orbitron', sans-serif",
+                  fontSize: "16px",
+                }}
+              >
+                ⚠️ Check Your MetaMask
+              </p>
+              <p className="text-sm text-white/90">
+                Please approve the pending transaction(s) in your MetaMask extension
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Canvas Area */}
       <div className="flex-1 relative overflow-hidden">
         {/* Grid Background */}
@@ -796,6 +902,34 @@ function FlowPageContent() {
                 );
               }
               
+              // Render Avail Node
+              if (node.type === 'avail') {
+                return (
+                  <div 
+                    key={node.id}
+                    onDoubleClick={() => handleAvailDoubleClick(node.id)}
+                  >
+                    <AvailStartNode
+                      id={node.id}
+                      position={node.position}
+                      isDragging={draggedNode === node.id}
+                      onMouseDown={(e) => handleNodeMouseDown(e, node.id)}
+                      onDelete={() => {
+                        setNodes((prev) => prev.filter((n) => n.id !== node.id));
+                      }}
+                      onAddConnection={() => {
+                        setParentNodeId(node.id);
+                        setIsNodePanelOpen(true);
+                      }}
+                      onDoubleClick={() => handleAvailDoubleClick(node.id)}
+                      hasChildren={nodes.some(n => n.parentId === node.id)}
+                      data={node.data}
+                      isExecuting={executingNodeId === node.id}
+                    />
+                  </div>
+                );
+              }
+              
               // Render Telegram Notification Node
               if (node.type === 'telegram-notification') {
                 return (
@@ -898,6 +1032,86 @@ function FlowPageContent() {
                       hasChildren={nodes.some(n => n.parentId === node.id)}
                       data={node.data}
                       isExecuting={executingNodeId === node.id}
+                    />
+                  </div>
+                );
+              }
+              
+              // Render Avail Bridge Node
+              if (node.type === 'avail-bridge') {
+                return (
+                  <div 
+                    key={node.id}
+                    className="absolute"
+                    style={{
+                      left: `${node.position.x}px`,
+                      top: `${node.position.y}px`,
+                      transform: 'translate(-50%, -50%)',
+                    }}
+                  >
+                    <AvailBridgeNode
+                      node={{
+                        id: node.id,
+                        type: node.type,
+                        title: node.name,
+                        icon: node.data.icon || '🔗',
+                        position: node.position,
+                        inputs: node.data as any,
+                      }}
+                      isLast={!nodes.some(n => n.parentId === node.id)}
+                      onMouseDown={(e: any) => handleNodeMouseDown(e, node.id)}
+                      onDelete={(nodeId: string) => {
+                        setNodes((prev) => prev.filter((n) => n.id !== nodeId));
+                      }}
+                      onUpdateInputs={(nodeId: string, inputs: Record<string, string>) => {
+                        setNodes(prev => prev.map(n => 
+                          n.id === nodeId ? { ...n, data: { ...n.data, ...inputs } } : n
+                        ));
+                      }}
+                      onAddNode={() => {
+                        setParentNodeId(node.id);
+                        setIsNodePanelOpen(true);
+                      }}
+                    />
+                  </div>
+                );
+              }
+              
+              // Render Avail Bridge & Execute Node
+              if (node.type === 'avail-bridge-execute') {
+                return (
+                  <div 
+                    key={node.id}
+                    className="absolute"
+                    style={{
+                      left: `${node.position.x}px`,
+                      top: `${node.position.y}px`,
+                      transform: 'translate(-50%, -50%)',
+                    }}
+                  >
+                    <AvailBridgeExecuteNode
+                      node={{
+                        id: node.id,
+                        type: node.type,
+                        title: node.name,
+                        icon: node.data.icon || '🚀',
+                        position: node.position,
+                        inputs: node.data as any,
+                      }}
+                      isLast={!nodes.some(n => n.parentId === node.id)}
+                      onMouseDown={(e: any) => handleNodeMouseDown(e, node.id)}
+                      onDelete={(nodeId: string) => {
+                        setNodes((prev) => prev.filter((n) => n.id !== nodeId));
+                      }}
+                      onUpdateInputs={(nodeId: string, inputs: Record<string, string>) => {
+                        setNodes(prev => prev.map(n => 
+                          n.id === nodeId ? { ...n, data: { ...n.data, ...inputs } } : n
+                        ));
+                      }}
+                      onAddNode={() => {
+                        setParentNodeId(node.id);
+                        setIsNodePanelOpen(true);
+                      }}
                     />
                   </div>
                 );
@@ -1257,6 +1471,14 @@ function FlowPageContent() {
                   // Gray circle is 120px beyond right edge: position.x + 210 + 120 + 10 (center of 20px circle)
                   startX = parentNode.position.x + 210 + 120 + 10;
                   startY = parentNode.position.y; // Center of the node (50% top position)
+                } else if (parentNode.type === 'hedera') {
+                  // Hedera node: Same as Base node - 420px wide
+                  startX = parentNode.position.x + 210 + 120 + 10;
+                  startY = parentNode.position.y;
+                } else if (parentNode.type === 'avail') {
+                  // Avail node: Same as Base node - 420px wide
+                  startX = parentNode.position.x + 210 + 120 + 10;
+                  startY = parentNode.position.y;
                 } else if (parentNode.type === 'telegram-notification') {
                   // Telegram notification node: 260px wide, connection at right: -100px
                   // Center is at position.x, so right edge is at position.x + 130
@@ -1300,6 +1522,14 @@ function FlowPageContent() {
                   // Connection point moved to the right
                   endX = node.position.x - 220 + 10;
                   endY = node.position.y; // Center of the node (50% top position)
+                } else if (node.type === 'hedera') {
+                  // Hedera node: Same as Base node - 420px wide
+                  endX = node.position.x - 220 + 10;
+                  endY = node.position.y;
+                } else if (node.type === 'avail') {
+                  // Avail node: Same as Base node - 420px wide
+                  endX = node.position.x - 220 + 10;
+                  endY = node.position.y;
                 } else if (node.type === 'telegram-notification') {
                   // Telegram notification node: 160px wide, left connection at -10px from left edge
                   // Center is at position.x, so left edge is at position.x - 80
@@ -1727,6 +1957,34 @@ function FlowPageContent() {
             setShowSuccessToast(true);
             setTimeout(() => setShowSuccessToast(false), 3000);
           }
+          
+          // If "avail" is selected, let user choose between bridge or bridge-execute
+          if (appId === 'avail') {
+            // For now, create a simple bridge node
+            // You can expand this to show a submenu for bridge vs bridge-execute
+            const newNode: Node = {
+              id: `node-${Date.now()}`,
+              type: 'avail-bridge',
+              name: 'Avail Bridge',
+              position: {
+                x: 400 + (nodes.length * 50),
+                y: 300 + (nodes.length * 50),
+              },
+              parentId: parentNodeId || undefined,
+              branch: parentBranch || undefined,
+              data: {
+                icon: 'avail',
+                color: '#00C896',
+              },
+            };
+            
+            setNodes((prev) => [...prev, newNode]);
+            setIsAppEventPanelOpen(false);
+            setParentNodeId(null);
+            setParentBranch(null);
+            setShowSuccessToast(true);
+            setTimeout(() => setShowSuccessToast(false), 3000);
+          }
         }}
       />
 
@@ -1813,6 +2071,30 @@ function FlowPageContent() {
           // Create a new node based on the selected node type
           console.log('Creating new node with type:', nodeType.id, 'NodeType object:', nodeType);
           
+          // Handle Avail nodes specifically
+          if (nodeType.id === 'avail-bridge' || nodeType.id === 'avail-bridge-execute') {
+            const newNode: Node = {
+              id: `node-${Date.now()}`,
+              type: nodeType.id,
+              name: nodeType.title,
+              position: newPosition,
+              parentId: parentNodeId || undefined,
+              branch: parentBranch || undefined,
+              data: {
+                icon: nodeType.id === 'avail-bridge' ? '🔗' : '🚀',
+                color: '#00C896',
+              },
+            };
+            
+            setNodes((prev) => [...prev, newNode]);
+            setIsNodePanelOpen(false);
+            setParentNodeId(null);
+            setParentBranch(null);
+            setShowSuccessToast(true);
+            setTimeout(() => setShowSuccessToast(false), 3000);
+            return;
+          }
+          
           const newNode: Node = {
             id: `node-${Date.now()}`,
             type: nodeType.id,
@@ -1857,6 +2139,17 @@ function FlowPageContent() {
         }}
         nodeData={selectedIfElseNode?.data}
         onSave={handleSaveIfElseConfig}
+      />
+
+      {/* Avail Configuration Panel */}
+      <AvailConfigPanel
+        isOpen={isAvailConfigOpen}
+        onClose={() => {
+          setIsAvailConfigOpen(false);
+          setSelectedAvailNode(null);
+        }}
+        nodeData={selectedAvailNode?.data}
+        onSave={handleSaveAvailConfig}
       />
     </div>
   );

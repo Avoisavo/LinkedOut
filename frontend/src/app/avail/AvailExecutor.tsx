@@ -1,20 +1,21 @@
 "use client";
 
-import { useAccount, useWalletClient } from "wagmi";
+import { useState, useEffect } from "react";
 import {
   initializeNexusClient,
   isNexusClientInitialized,
-} from "../../../lib/avail/nexusClient";
+  getNexusClient,
+} from "../../lib/avail/nexusClient";
 import {
   executeBridge,
   executeBridgeAndExecute,
-} from "../../../lib/avail/bridgeExecutor";
+} from "../../lib/avail/bridgeExecutor";
 import {
   logExecutionStart,
   logExecutionSuccess,
   logExecutionError,
   addExecutionLogEntry,
-} from "../../../lib/api/executionLogger";
+} from "../../lib/api/executionLogger";
 
 interface ExecuteResult {
   success: boolean;
@@ -24,20 +25,123 @@ interface ExecuteResult {
 }
 
 /**
- * Hook to use Avail Executor with wagmi
+ * AvailExecutor - Handles client-side execution of workflows with Avail nodes
  */
-export function useAvailExecutor() {
-  const { isConnected, address } = useAccount();
-  const { data: walletClient } = useWalletClient();
+export default function AvailExecutor() {
+  const [walletConnected, setWalletConnected] = useState(false);
+  const [walletAddress, setWalletAddress] = useState<string | null>(null);
+
+  // Listen for account changes
+  useEffect(() => {
+    if (typeof window !== "undefined" && (window as any).ethereum) {
+      const provider = (window as any).ethereum;
+
+      const handleAccountsChanged = (accounts: string[]) => {
+        if (accounts.length === 0) {
+          // User disconnected their wallet
+          disconnectWallet();
+        } else if (walletConnected && accounts[0] !== walletAddress) {
+          // User switched accounts
+          console.log("👤 Account switched to:", accounts[0]);
+          setWalletAddress(accounts[0]);
+        }
+      };
+
+      provider.on("accountsChanged", handleAccountsChanged);
+
+      return () => {
+        provider.removeListener("accountsChanged", handleAccountsChanged);
+      };
+    }
+  }, [walletConnected, walletAddress]);
+
+  const connectWallet = async (): Promise<boolean> => {
+    if (typeof window === "undefined" || !(window as any).ethereum) {
+      alert("Please install MetaMask or another Web3 wallet");
+      return false;
+    }
+
+    try {
+      const provider = (window as any).ethereum;
+
+      // Always request accounts to show MetaMask account selector
+      // This allows user to choose which wallet to connect
+      console.log("📱 Requesting wallet connection...");
+      console.log(
+        "💡 Please select which account you want to connect in MetaMask"
+      );
+
+      const accounts = await provider.request({
+        method: "eth_requestAccounts",
+      });
+
+      if (accounts.length > 0) {
+        setWalletConnected(true);
+        setWalletAddress(accounts[0]);
+        console.log("✅ Wallet connected:", accounts[0]);
+        console.log(
+          "ℹ️ Nexus SDK will initialize when you execute your first workflow"
+        );
+        console.log(
+          "ℹ️ You will be asked to sign a message to create your Chain Abstraction account"
+        );
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      console.error("Error connecting wallet:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to connect wallet";
+
+      // Don't show alert for user rejection
+      if (errorMessage.includes("User rejected")) {
+        console.log("👋 Wallet connection cancelled by user");
+        return false;
+      }
+
+      alert(`Wallet connection failed: ${errorMessage}`);
+      return false;
+    }
+  };
+
+  const disconnectWallet = async () => {
+    setWalletConnected(false);
+    setWalletAddress(null);
+
+    // Deinitialize Nexus SDK if it exists
+    if (isNexusClientInitialized()) {
+      try {
+        const { resetNexusClient } = await import(
+          "../../../lib/avail/nexusClient"
+        );
+        await resetNexusClient();
+        console.log("🔌 Nexus SDK deinitialized");
+      } catch (error) {
+        console.log("SDK cleanup:", error);
+      }
+    }
+
+    console.log(
+      "👋 Wallet disconnected. Connect again to choose a different account."
+    );
+  };
 
   return {
-    walletConnected: isConnected,
-    walletAddress: address || null,
+    walletConnected,
+    walletAddress,
+    connectWallet,
+    disconnectWallet,
     executeWorkflow: async (
       workflowId: string,
       nodes: any[]
     ): Promise<ExecuteResult> => {
-      return executeAvailWorkflow(workflowId, nodes, isConnected, walletClient);
+      return executeAvailWorkflow(
+        workflowId,
+        nodes,
+        walletConnected,
+        connectWallet
+      );
     },
   };
 }
@@ -48,21 +152,23 @@ export function useAvailExecutor() {
 export async function executeAvailWorkflow(
   workflowId: string,
   nodes: any[],
-  isConnected: boolean,
-  walletClient: any
+  walletConnected: boolean,
+  connectWallet: () => Promise<boolean>
 ): Promise<ExecuteResult> {
   const logs: any[] = [];
   const txHashes: string[] = [];
 
   try {
-    // Ensure wallet is connected
-    if (!isConnected || !walletClient) {
-      throw new Error(
-        "Please connect your wallet using the Connect button in the header to execute this workflow."
-      );
+    // Ensure wallet is connected first
+    if (!walletConnected) {
+      console.log("🔌 Wallet not connected. Requesting connection...");
+      const connected = await connectWallet();
+      if (!connected) {
+        throw new Error(
+          "Wallet connection required to execute Avail workflow. Please connect your wallet and try again."
+        );
+      }
     }
-
-    console.log("✅ Wallet connected:", walletClient.account.address);
 
     // Initialize Nexus SDK only when needed (on first execution)
     if (!isNexusClientInitialized()) {
@@ -74,40 +180,23 @@ export async function executeAvailWorkflow(
         "⚠️ This creates your Chain Abstraction account (one-time setup)"
       );
 
-      try {
-        // Use window.ethereum directly for better network switching support
-        // This ensures the SDK always sees the current network state
-        if (typeof window !== "undefined" && (window as any).ethereum) {
-          const provider = (window as any).ethereum;
-          await initializeNexusClient(provider);
+      if (typeof window !== "undefined" && (window as any).ethereum) {
+        try {
+          await initializeNexusClient((window as any).ethereum);
           console.log("✅ Nexus SDK initialized successfully!");
-        } else {
-          throw new Error(
-            "MetaMask or compatible wallet not found. Please install MetaMask."
-          );
+        } catch (error) {
+          if (
+            error instanceof Error &&
+            error.message.includes("User rejected")
+          ) {
+            throw new Error(
+              "You rejected the signature request. Please try again and approve the signature to create your Chain Abstraction account."
+            );
+          }
+          throw error;
         }
-      } catch (error) {
-        if (error instanceof Error && error.message.includes("User rejected")) {
-          throw new Error(
-            "You rejected the signature request. Please try again and approve the signature to create your Chain Abstraction account."
-          );
-        }
-        throw error;
-      }
-    }
-
-    // Log the current chain before executing
-    if (typeof window !== "undefined" && (window as any).ethereum) {
-      try {
-        const currentChainId = await (window as any).ethereum.request({
-          method: "eth_chainId",
-        });
-        console.log(
-          "✅ Executing from chain ID:",
-          parseInt(currentChainId, 16)
-        );
-      } catch (e) {
-        console.warn("Could not detect current chain");
+      } else {
+        throw new Error("No wallet provider found. Please install MetaMask.");
       }
     }
 
@@ -249,38 +338,24 @@ export async function executeAvailWorkflow(
  * Execute an Avail Bridge node
  */
 async function executeAvailBridgeNode(node: any) {
-  const { targetChain, token, amount } = node.inputs || {};
+  const { sourceChain, targetChain, token, amount } = node.inputs || {};
 
-  // Validate required parameters with specific error messages
-  if (!targetChain) {
-    throw new Error(
-      "Missing destination chain. Please select a destination chain in the Avail Bridge node configuration."
-    );
-  }
-  if (!token) {
-    throw new Error(
-      "Missing token. Please select a token (ETH, USDC, or USDT) in the Avail Bridge node configuration."
-    );
-  }
-  if (!amount) {
-    throw new Error(
-      "Missing amount. Please enter an amount in the Avail Bridge node configuration."
-    );
+  if (!sourceChain || !targetChain || !token || !amount) {
+    throw new Error("Missing required bridge parameters");
   }
 
   console.log("🌉 Executing Avail Bridge:", {
+    sourceChain,
     targetChain,
     token,
     amount,
   });
-  console.log("ℹ️ Source chain: Auto-detected from your connected wallet");
   console.log(
     "ℹ️ Tokens will be sent to your connected wallet on the destination chain"
   );
 
-  // Source chain is auto-detected from connected wallet by the SDK
   const result = await executeBridge({
-    sourceChain: targetChain, // Placeholder - SDK ignores this and auto-detects
+    sourceChain,
     targetChain,
     token,
     amount,
@@ -298,6 +373,7 @@ async function executeAvailBridgeNode(node: any) {
  */
 async function executeAvailBridgeExecuteNode(node: any) {
   const {
+    sourceChain,
     targetChain,
     token,
     amount,
@@ -307,41 +383,25 @@ async function executeAvailBridgeExecuteNode(node: any) {
     executeValue,
   } = node.inputs || {};
 
-  // Validate required parameters with specific error messages
-  if (!targetChain) {
-    throw new Error(
-      "Missing destination chain. Please select a destination chain in the Bridge & Execute node configuration."
-    );
-  }
-  if (!token) {
-    throw new Error(
-      "Missing token. Please select a token (ETH, USDC, or USDT) in the Bridge & Execute node configuration."
-    );
-  }
-  if (!amount) {
-    throw new Error(
-      "Missing amount. Please enter an amount in the Bridge & Execute node configuration."
-    );
-  }
-  if (!executeContract) {
-    throw new Error(
-      "Missing contract address. Please enter the contract address in the Bridge & Execute node configuration."
-    );
-  }
-  if (!executeFunction) {
-    throw new Error(
-      "Missing function name. Please enter the function name in the Bridge & Execute node configuration."
-    );
+  if (
+    !sourceChain ||
+    !targetChain ||
+    !token ||
+    !amount ||
+    !executeContract ||
+    !executeFunction
+  ) {
+    throw new Error("Missing required bridge & execute parameters");
   }
 
   console.log("🚀 Executing Avail Bridge & Execute:", {
+    sourceChain,
     targetChain,
     token,
     amount,
     executeContract,
     executeFunction,
   });
-  console.log("ℹ️ Source chain: Auto-detected from your connected wallet");
 
   // Parse function parameters if provided
   let parsedParams;
@@ -353,9 +413,8 @@ async function executeAvailBridgeExecuteNode(node: any) {
     throw new Error("Invalid function parameters JSON");
   }
 
-  // Source chain is auto-detected from connected wallet by the SDK
   const result = await executeBridgeAndExecute({
-    sourceChain: targetChain, // Placeholder - SDK ignores this and auto-detects
+    sourceChain,
     targetChain,
     token,
     amount,
@@ -370,4 +429,11 @@ async function executeAvailBridgeExecuteNode(node: any) {
   }
 
   return result;
+}
+
+/**
+ * Hook to use Avail Executor in components
+ */
+export function useAvailExecutor() {
+  return AvailExecutor();
 }

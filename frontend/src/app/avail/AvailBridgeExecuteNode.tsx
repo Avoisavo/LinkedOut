@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { getSupportedChainNames } from "../../../lib/avail/nexusClient";
+import { getSupportedChainNames } from "../../lib/avail/nexusClient";
 
 interface AvailBridgeExecuteNodeProps {
   node: {
