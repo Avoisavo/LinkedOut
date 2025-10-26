@@ -79,29 +79,6 @@ That's when I realized:
 - ✅ Verify everything on-chain
 - ✅ Save time and avoid mistakes
 
-### Why This Needed to Exist
-
-The Web3 ecosystem has incredible technology:
-- Hedera's agent-to-agent communication
-- LayerZero's omnichain messaging
-- Avail's intent-based bridging
-- Base's L2 infrastructure
-
-But they're all **separate pieces**. No one built the tool that:
-- **Combines them all** into one workflow
-- **Makes them accessible** to beginners
-- **Automates the complexity** that usually takes hours
-
-**That's why I built LinkedOut** - to be the bridge between Web2 developers and the Web3 ecosystem. To turn "I have no idea how to do this" into "I just typed what I want and it worked."
-
-### From Idea to Reality
-
-Starting as a Web3 beginner, I:
-1. **Learned by building** - Integrated Hedera, LayerZero, Avail, and Base one by one
-2. **Made it visual** - Created a drag-and-drop interface so others don't need to code
-3. **Added AI** - Let users describe intent in plain English, not technical terms
-4. **Automated everything** - One signature instead of 10+ manual transactions
-5. **Made it verifiable** - All actions are on-chain and transparent
 
 Now, **anyone can build crosschain workflows** - whether you're a Web3 expert or someone who just heard about blockchain yesterday.
 
