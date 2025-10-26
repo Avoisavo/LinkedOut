@@ -38,31 +38,74 @@ All in **one signature**.
 
 ## 🚀 How We Built This
 
-### The Journey
+### The Story Behind LinkedOut
 
-We started with a fundamental question: **"How can we make crosschain DeFi accessible to everyone?"**
+**I was a beginner in Web3**, and everything felt overwhelming.
 
-**Phase 1 - Visual Workflow Builder**: Built a drag-and-drop interface for composing blockchain actions (inspired by Zapier/n8n)
+When I wanted to integrate Web2 applications with Web3 functionality, it was **extremely troublesome**:
 
-**Phase 2 - AI Integration**: Added natural language processing using Groq's Llama models to generate workflows from text prompts
+- 📚 **Reading endless documentation** - Every protocol has different docs, different SDKs, different patterns
+- 🤖 **ChatGPT could only tell me what to do** - "You need to call this function, then that contract, then bridge here..." but it couldn't actually DO it for me
+- 🔍 **No tools existed** - I searched everywhere for a platform that could bridge Web2 and Web3 workflows, but there was nothing in the market
+- 😰 **Every integration was manual** - Want to bridge tokens? Read LayerZero docs. Want to use agents? Learn Hedera. Want to call contracts on Base? Study Wagmi. Each one took days.
 
-**Phase 3 - Crosschain Infrastructure**:
-- Integrated **Avail Nexus SDK** for intent-based bridging between Ethereum L1 and L2s
-- Deployed **LayerZero OFT contracts** for Base ↔ Hedera bridging
-- Implemented **Hedera A2A protocol** for agent-to-agent communication
+### The "Aha!" Moment
 
-**Phase 4 - Agent System**: Built autonomous agents (Telegram, AI Decision, Bridge Executor) that coordinate via Hedera Consensus Service
+I thought: **"What if I could just TELL the computer what I want in plain English, and it figures out all the Web3 complexity for me?"**
 
-**Phase 5 - User Testing**: Refined UX based on real testnet transactions and user feedback
+That's when I realized:
+- AI can understand natural language intent
+- Agents can coordinate complex multi-step operations
+- Bridges can handle crosschain execution
+- Everything can be combined into **ONE simple interface**
 
-### Key Innovation
+### What Makes This Different
 
-The **AI + Agent + Bridge** combination is unique:
-- AI understands user intent and validates parameters
-- Agents coordinate execution using blockchain-native messaging (Hedera HCS)
-- Multiple bridge protocols (Avail, LayerZero) provide flexibility and redundancy
+**For beginners like me:**
+- ✅ No need to read 10 different protocol docs
+- ✅ No need to write complex Web3 code
+- ✅ No need to manually bridge, approve, and execute
+- ✅ Just type what you want, and it happens
 
-This creates a **self-executing crosschain workflow engine** that feels like magic to users.
+**For Web2 developers:**
+- ✅ Integrate Web3 without learning Solidity
+- ✅ Build workflows visually like Zapier
+- ✅ Use familiar concepts (APIs, agents, automation)
+- ✅ Bridge the gap between Web2 and Web3
+
+**For Web3 users:**
+- ✅ Execute complex crosschain strategies in one click
+- ✅ Combine multiple protocols seamlessly
+- ✅ Verify everything on-chain
+- ✅ Save time and avoid mistakes
+
+### Why This Needed to Exist
+
+The Web3 ecosystem has incredible technology:
+- Hedera's agent-to-agent communication
+- LayerZero's omnichain messaging
+- Avail's intent-based bridging
+- Base's L2 infrastructure
+
+But they're all **separate pieces**. No one built the tool that:
+- **Combines them all** into one workflow
+- **Makes them accessible** to beginners
+- **Automates the complexity** that usually takes hours
+
+**That's why I built LinkedOut** - to be the bridge between Web2 developers and the Web3 ecosystem. To turn "I have no idea how to do this" into "I just typed what I want and it worked."
+
+### From Idea to Reality
+
+Starting as a Web3 beginner, I:
+1. **Learned by building** - Integrated Hedera, LayerZero, Avail, and Base one by one
+2. **Made it visual** - Created a drag-and-drop interface so others don't need to code
+3. **Added AI** - Let users describe intent in plain English, not technical terms
+4. **Automated everything** - One signature instead of 10+ manual transactions
+5. **Made it verifiable** - All actions are on-chain and transparent
+
+Now, **anyone can build crosschain workflows** - whether you're a Web3 expert or someone who just heard about blockchain yesterday.
+
+That's the power of LinkedOut. 🚀
 
 ## 🌉 Avail Nexus Integration
 
@@ -263,18 +306,18 @@ Before you begin, ensure you have:
 
 #### 1. Clone the Repository
 
-```bash
+   ```bash
 git clone https://github.com/yourusername/LinkedOut.git
-cd LinkedOut
-```
+   cd LinkedOut
+   ```
 
 #### 2. Install Dependencies
 
 **Frontend:**
-```bash
-cd frontend
-npm install
-```
+   ```bash
+   cd frontend
+   npm install
+   ```
 
 **Backend:**
 ```bash
@@ -285,7 +328,7 @@ npm install
 #### 3. Set Up Environment Variables
 
 **Backend** (`backend/api/.env`):
-```bash
+   ```bash
 # Hedera Agent Accounts
 HEDERA_TELEGRAM_ACCOUNT_ID=0.0.7130534
 HEDERA_TELEGRAM_PRIVATE_KEY=your_private_key
@@ -312,14 +355,14 @@ GROQ_API_KEY=your_groq_api_key
 NEXT_PUBLIC_API_URL=http://localhost:8000
 
 # Optional: WalletConnect Project ID
-# Get from https://cloud.walletconnect.com/
-# NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=your_project_id
+   # Get from https://cloud.walletconnect.com/
+   # NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=your_project_id
 
 # Groq API (for prompt processing)
 NEXT_PUBLIC_GROQ_API_KEY=your_groq_api_key
-```
+   ```
 
-> **Note:** WalletConnect is optional. MetaMask works without it.
+   > **Note:** WalletConnect is optional. MetaMask works without it.
 
 #### 4. Get Testnet Tokens
 
@@ -339,7 +382,7 @@ NEXT_PUBLIC_GROQ_API_KEY=your_groq_api_key
 Open **two terminals**:
 
 **Terminal 1 - Backend:**
-```bash
+   ```bash
 cd backend/api
 node server.js
 ```
@@ -348,8 +391,8 @@ The backend will start on `http://localhost:8000`
 **Terminal 2 - Frontend:**
 ```bash
 cd frontend
-npm run dev
-```
+   npm run dev
+   ```
 The frontend will start on `http://localhost:3000`
 
 #### 6. Connect Your Wallet
@@ -1107,130 +1150,6 @@ User: "Bridge 0.1 USDC from Ethereum to Base and wrap as WETH"
 - MetaMask works without it
 - Comment out `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` in `.env.local`
 
-## 📚 Resources
-
-- **Avail Nexus Docs**: https://www.availproject.org/
-- **Nexus SDK GitHub**: https://github.com/availproject/nexus-sdk
-- **Nexus Explorer**: https://explorer.nexus-folly.availproject.org
-- **Demo App**: Included in `avail-nexus-demo/` folder
-
-## 🎯 Summary: What Makes LinkedOut Unique
-
-### The Complete Package
-
-LinkedOut is **not just a bridge** — it's a **workflow automation platform** that combines:
-
-1. **AI-Powered Workflow Generation**
-   - Natural language → executable workflows
-   - No coding required
-   - Instant deployment
-
-2. **Multi-Protocol Bridging**
-   - **Avail Nexus**: L1 ↔ L2 intent-based bridging
-   - **LayerZero V2**: Base ↔ Hedera OFT bridging
-   - Automatic protocol selection based on route
-
-3. **Autonomous Agent System**
-   - Hedera Agent Kit with A2A protocol
-   - On-chain agent communication via HCS
-   - Event-driven architecture
-
-4. **Crosschain Execution**
-   - Bridge + approve + execute in ONE transaction
-   - Contract interactions on destination chains
-   - DeFi protocol integration (AAVE, WETH)
-
-5. **Full Transparency**
-   - Every step verifiable on-chain
-   - Links to multiple explorers
-   - Real-time execution logs
-
-### Technologies Demonstrated
-
-✅ **Hedera Integration**
-- A2A Protocol with custom message schemas
-- Hedera Consensus Service (Topic 0.0.7131514)
-- Three autonomous agents (Telegram, AI, Bridge Executor)
-- Hedera Agent Kit v3.4.0
-
-✅ **LayerZero Integration**
-- OFT contracts deployed on Base Sepolia & Hedera Testnet
-- ConditionalBridge.sol with custom logic
-- Cross-EVM messaging with DVN verification
-- Base ↔ Hedera bridging
-
-✅ **Avail Nexus Integration**
-- Nexus Core SDK v0.0.2
-- Intent-based bridging (bridge + execute in one)
-- Multi-chain support (Ethereum, Base, Arbitrum, Optimism, Polygon)
-- Real transactions on testnet
-
-✅ **Base Blockchain**
-- Primary L2 destination for Nexus intents
-- LayerZero OFT deployment for Hedera bridging
-- DeFi integrations (WETH, USDC, AAVE)
-- Verified contracts on Base Sepolia
-
-✅ **AI/LLM Integration**
-- Groq API (Llama 3) for workflow generation
-- LangChain for agent reasoning
-- Natural language processing
-
-### Real-World Usage
-
-**Problem**: User wants to "Bridge 100 USDC from Ethereum to Base and deposit into AAVE"
-
-**Traditional Approach** (8+ steps):
-1. Open bridge website
-2. Bridge USDC (wait 10-15 min)
-3. Switch to Base network in MetaMask
-4. Find AAVE dApp
-5. Approve USDC spending (transaction 1)
-6. Deposit into AAVE (transaction 2)
-7. Verify each transaction separately
-8. Track multiple links
-
-**LinkedOut Approach** (1 step):
-1. Type prompt: "Bridge 100 USDC from Ethereum to Base and deposit into AAVE"
-2. AI generates workflow
-3. Click Execute → ONE signature
-4. Everything happens automatically via Avail Nexus intent
-5. Done! ✅
-
-**Time saved**: 10+ minutes  
-**Transactions**: 1 intent instead of 3+ separate transactions  
-**Complexity**: Zero for user
-
-### Verifiable Results
-
-All our demos are **live on testnet** and **fully verifiable**:
-
-- **Avail Nexus Intent**: https://explorer.nexus-folly.availproject.org/intent/426
-- **Base Approval tx**: https://sepolia.basescan.org/tx/0x106e0a584cf8583c5a46d9fea04ab68cabeff5c7f03710c3f86a20f144844283
-- **Base Execute tx**: https://sepolia.basescan.org/tx/0xa18b66fe7ed3a1ece5668f7f278dd71fb9870708d11da7197ebcaa6441d6c3c8
-- **Hedera HCS Topic**: https://hashscan.io/testnet/topic/0.0.7131514
-
-### Future Roadmap
-
-🚧 **Mainnet Deployment**
-- Deploy to production networks
-- Real USDC/ETH bridging
-
-🚧 **More Protocols**
-- Uniswap swaps
-- Compound lending
-- Curve pools
-
-🚧 **Advanced Agents**
-- Market monitoring agents
-- Automated rebalancing
-- Portfolio management
-
-🚧 **Social Integration**
-- Telegram bot for workflow execution
-- Discord notifications
-- XMTP messaging
-
 ## 🎯 Hackathon Criteria
 
 ### Hedera Track
@@ -1258,99 +1177,45 @@ All our demos are **live on testnet** and **fully verifiable**:
 ✅ **Primary Destination**: Base as main L2 for workflows  
 ✅ **Verified Contracts**: All contracts verified on BaseScan
 
-## 📝 License
-
-MIT License - Feel free to use this project as a reference or starting point for your own Nexus integrations!
-
-## 🤝 Contributing
-
-We welcome contributions from the community! Here's how you can help:
-
-### Areas for Contribution
-
-**Blockchain Integrations**:
-- Add support for more L2s (Mantle, Scroll, zkSync)
-- Integrate additional bridge protocols
-- Deploy to mainnet
-
-**Smart Contracts**:
-- Create templates for common DeFi operations
-- Add more protocol ABIs (Uniswap, Compound, Curve)
-- Optimize gas usage
-
-**Agent System**:
-- Build new agent types (price monitoring, arbitrage, etc.)
-- Improve AI decision logic
-- Add more notification channels
-
-**UI/UX**:
-- Design new workflow templates
-- Improve visual feedback
-- Mobile-responsive design
-
-**Documentation**:
-- Video tutorials
-- Integration guides
-- API documentation
-
-### Development Setup
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Commit changes: `git commit -m 'Add amazing feature'`
-4. Push to branch: `git push origin feature/amazing-feature`
-5. Open a Pull Request
-
-### Code Style
-
-- TypeScript for frontend
-- ESLint + Prettier for formatting
-- Clear comments for complex logic
-- Test before submitting
-
-## 📞 Contact & Support
-
-- **GitHub Issues**: Report bugs or request features
-- **Documentation**: See `HEDERA_AGENT_WORKFLOW.md`, `AVAIL_BRIDGE_GUIDE.md`
-- **Discord**: Join our community (link TBD)
-- **Twitter**: Follow for updates (link TBD)
-
 ## 🙏 Acknowledgments
 
-Built with amazing tools and protocols:
+Special thanks to the teams building the future of crosschain infrastructure:
 
-- **Hedera** for agent communication via HCS
-- **LayerZero** for omnichain bridging
-- **Avail** for intent-based crosschain execution
-- **Base** for L2 infrastructure
-- **Groq** for AI workflow generation
-- **LangChain** for agent reasoning
-- **Next.js** for the frontend framework
-- **Wagmi** and **Viem** for Web3 interactions
+- **Hedera** - Agent communication via HCS
+- **LayerZero** - Omnichain bridging
+- **Avail** - Intent-based crosschain execution
+- **Base** - L2 infrastructure
+- **Groq** - AI workflow generation
 
-Special thanks to all the teams building the future of crosschain infrastructure! 🚀
+## 👥 Team
 
----
+### Tan Zhi Wei
+- Full Stack Developer
+- LayerZero Integration
+- PayPal Integration
+
+### Edwina Hon Kai Xin
+- Backend Developer
+- Hedera A2A Protocol
+- Avail Bridging
 
 ## 📝 License
 
 MIT License - Feel free to use this project as a reference or starting point for your own integrations!
+
+## 🔗 Quick Links
+
+- 🌐 **Live Demo**: http://localhost:3000 (after installation)
+- 📚 **Documentation**: `HEDERA_AGENT_WORKFLOW.md`, `AVAIL_BRIDGE_GUIDE.md`
+- 🔗 **Avail Nexus Explorer**: https://explorer.nexus-folly.availproject.org
+- 🔗 **Hedera HCS Topic**: https://hashscan.io/testnet/topic/0.0.7131514
+- 🔗 **Base Sepolia Explorer**: https://sepolia.basescan.org
+- 🔗 **LayerZero Scan**: https://testnet.layerzeroscan.com
 
 ---
 
 **Built with ❤️ by the LinkedOut team**
 
 *Making crosschain DeFi accessible to everyone, one workflow at a time.*
-
----
-
-### Quick Links
-
-- 🌐 **Live Demo**: http://localhost:3000 (after installation)
-- 📚 **Docs**: See project markdown files
-- 🔗 **Avail Nexus Explorer**: https://explorer.nexus-folly.availproject.org
-- 🔗 **Hedera HCS Topic**: https://hashscan.io/testnet/topic/0.0.7131514
-- 🔗 **Base Sepolia Explorer**: https://sepolia.basescan.org
-- 🔗 **LayerZero Scan**: https://testnet.layerzeroscan.com
 
 **Ready to build your first crosschain workflow? [Get Started](#-getting-started) →**
