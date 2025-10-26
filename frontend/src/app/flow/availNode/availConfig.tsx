@@ -807,7 +807,7 @@ export default function AvailConfigPanel({
                 </div>
                 
                 {/* Multiple Wallets Warning */}
-                {typeof window !== 'undefined' && (window as unknown as { ethereum?: { providers?: unknown[] } }).ethereum?.providers?.length > 1 && (
+                {typeof window !== 'undefined' && (window as unknown as { ethereum?: { providers?: unknown[] } })?.ethereum?.providers && ((window as unknown as { ethereum?: { providers?: unknown[] } })?.ethereum?.providers?.length ?? 0) > 1 && (
                   <div
                     className="p-3 rounded-lg flex items-start gap-2"
                     style={{

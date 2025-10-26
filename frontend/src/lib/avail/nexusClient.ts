@@ -3,6 +3,12 @@ import { NexusSDK } from "@avail-project/nexus-core";
 let nexusClientInstance: NexusSDK | null = null;
 let initializationInProgress = false;
 
+export interface EthereumProvider {
+  request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
+  on?: (event: string, handler: (...args: unknown[]) => void) => void;
+  removeListener?: (event: string, handler: (...args: unknown[]) => void) => void;
+}
+
 export interface ChainConfig {
   chainId: number;
   name: string;
@@ -48,7 +54,7 @@ export const SUPPORTED_CHAINS: Record<string, ChainConfig> = {
  * Initialize Nexus SDK with wallet provider
  * @param provider - Injected wallet provider (MetaMask, WalletConnect, etc.)
  */
-export async function initializeNexusClient(provider: Record<string, unknown> & { request: (args: { method: string }) => Promise<string> }): Promise<NexusSDK> {
+export async function initializeNexusClient(provider: EthereumProvider): Promise<NexusSDK> {
   if (!provider) {
     throw new Error("Wallet provider is required to initialize Nexus SDK");
   }
@@ -59,7 +65,7 @@ export async function initializeNexusClient(provider: Record<string, unknown> & 
 
     // Log current chain to help debug
     try {
-      const chainId = await provider.request({ method: "eth_chainId" });
+      const chainId = await provider.request({ method: "eth_chainId" }) as string;
       console.log("ℹ️ Current wallet chain ID:", parseInt(chainId, 16));
     } catch (e) {
       console.warn("Could not detect current chain");
@@ -89,13 +95,13 @@ export async function initializeNexusClient(provider: Record<string, unknown> & 
     );
 
     // Check if wallet is already connected (don't request connection)
-    const accounts = await provider.request({ method: "eth_accounts" });
+    const accounts = await provider.request({ method: "eth_accounts" }) as string[];
     if (accounts.length === 0) {
       throw new Error("No wallet connected. Please connect your wallet first.");
     }
 
     // Get current chain ID
-    const chainId = await provider.request({ method: "eth_chainId" });
+    const chainId = await provider.request({ method: "eth_chainId" }) as string;
     const currentChainId = parseInt(chainId, 16);
     console.log("✅ Using connected wallet:", accounts[0]);
     console.log("ℹ️ Current chain ID:", currentChainId);

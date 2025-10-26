@@ -199,6 +199,12 @@ function FlowPageContent() {
           data: Record<string, unknown>;
           name: string;
         },
+      } as Node & {
+        parentNode: {
+          type: string;
+          data: Record<string, unknown>;
+          name: string;
+        };
       });
       setIsAIAgentConfigOpen(true);
     }
@@ -330,7 +336,7 @@ function FlowPageContent() {
       // Use Avail Executor for workflows with Avail nodes
       const result = await availExecutor.executeWorkflow(
         currentWorkflow?.id || 'temp-workflow-id',
-        nodes
+        nodes.map(node => ({ ...node, title: node.name }))
       );
 
       setShowMetaMaskReminder(false);
@@ -570,7 +576,7 @@ function FlowPageContent() {
               data: {
                 ...node.data,
                 botToken: botToken,
-                botInfo: botInfo,
+                botInfo: botInfo || undefined,
                 triggerType: selectedTelegramAction,
               }
             }
@@ -589,7 +595,7 @@ function FlowPageContent() {
         },
         data: {
           botToken: botToken,
-          botInfo: botInfo,
+          botInfo: botInfo || undefined,
           triggerType: selectedTelegramAction,
           icon: 'telegram',
           color: '#0088cc',
@@ -616,7 +622,7 @@ function FlowPageContent() {
       if (workflow) {
         setCurrentWorkflow(workflow);
         setWorkflowTitle(workflow.title);
-        setNodes(workflow.nodes || []);
+        setNodes((workflow.nodes || []) as Node[]);
         setTransform(workflow.transform || { x: 0, y: 0, scale: 1 });
         console.log('Loaded workflow:', workflow.title);
       }

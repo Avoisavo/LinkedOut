@@ -311,17 +311,19 @@ export default function AIAgentConfigPanel({
                   )}
                 </div>
 
-                {nodeData.parentNode.type === 'telegram-trigger' && (
+                {nodeData.parentNode.type === 'telegram-trigger' && (() => {
+                  const parentData = nodeData.parentNode.data as { botInfo?: { username?: string; first_name?: string }; triggerType?: string };
+                  return (
                   <div className="space-y-2">
                     {/* Bot Info */}
-                    {nodeData.parentNode.data.botInfo && (
+                    {parentData?.botInfo && (
                       <div className="bg-gray-50 p-3 rounded">
                         <p className="text-xs font-semibold text-gray-500 mb-1">Bot Info</p>
                         <p className="text-sm font-medium text-gray-900">
-                          @{nodeData.parentNode.data.botInfo.username || 'bot'}
+                          @{parentData.botInfo.username || 'bot'}
                         </p>
                         <p className="text-xs text-gray-600">
-                          {nodeData.parentNode.data.botInfo.first_name || 'Telegram Bot'}
+                          {parentData.botInfo.first_name || 'Telegram Bot'}
                         </p>
                       </div>
                     )}
@@ -330,7 +332,7 @@ export default function AIAgentConfigPanel({
                     <div className="bg-gray-50 p-3 rounded">
                       <p className="text-xs font-semibold text-gray-500 mb-1">Trigger Type</p>
                       <p className="text-sm font-medium text-gray-900">
-                        {nodeData.parentNode.data.triggerType?.replace(/-/g, ' ').toUpperCase() || 'MESSAGE'}
+                        {parentData.triggerType?.replace(/-/g, ' ').toUpperCase() || 'MESSAGE'}
                       </p>
                     </div>
 
@@ -351,24 +353,27 @@ export default function AIAgentConfigPanel({
                             {JSON.stringify(telegramOutput, null, 2)}
                           </pre>
                         </div>
-                        {telegramOutput.message && (
+                        {(() => {
+                          const message = telegramOutput.message as { text?: string; from?: { username?: string }; chat?: { id?: string } } | undefined;
+                          return message && (
                           <div className="mt-2 space-y-1">
                             <p className="text-xs text-green-800">
-                              <strong>Message:</strong> {telegramOutput.message.text || 'N/A'}
+                              <strong>Message:</strong> {message.text || 'N/A'}
                             </p>
                             <p className="text-xs text-green-800">
-                              <strong>From:</strong> @{telegramOutput.message.from?.username || 'Unknown'}
+                              <strong>From:</strong> @{message.from?.username || 'Unknown'}
                             </p>
                             <p className="text-xs text-green-800">
-                              <strong>Chat ID:</strong> {telegramOutput.message.chat?.id || 'N/A'}
+                              <strong>Chat ID:</strong> {message.chat?.id || 'N/A'}
                             </p>
                           </div>
-                        )}
+                          );
+                        })()}
                       </div>
                     ) : telegramOutput?.isEmpty ? (
                       <div className="bg-yellow-50 p-3 rounded border border-yellow-200">
                         <p className="text-xs text-yellow-800">
-                          {telegramOutput.message || telegramOutput.error}
+                          {String((telegramOutput as { message?: unknown; error?: unknown }).message || (telegramOutput as { message?: unknown; error?: unknown }).error || 'No data')}
                         </p>
                         <button
                           onClick={handleExecutePreviousNode}
@@ -392,7 +397,8 @@ export default function AIAgentConfigPanel({
                       </div>
                     )}
                   </div>
-                )}
+                  );
+                })()}
               </div>
             ) : (
             <div
@@ -1267,15 +1273,18 @@ export default function AIAgentConfigPanel({
                     </p>
                   </div>
 
-                  {telegramOutput.message?.text && (
+                  {(() => {
+                    const message = (telegramOutput as { message?: { text?: string } }).message;
+                    return message?.text && (
                     <div className="bg-gray-50 p-3 rounded">
                       <p className="text-xs font-semibold text-gray-600 mb-1">User Message</p>
-                      <p className="text-sm text-gray-900">&quot;{telegramOutput.message.text}&quot;</p>
+                      <p className="text-sm text-gray-900">&quot;{message.text}&quot;</p>
                       <p className="text-xs text-gray-500 mt-2">
                         → Will be processed by AI Agent
                       </p>
                     </div>
-                  )}
+                    );
+                  })()}
                 </div>
               ) : (
                 <div className="p-6">
