@@ -2,6 +2,8 @@
 
 **LinkedOut** is an intelligent workflow automation platform that transforms natural language prompts into executable crosschain workflows. Users can describe what they want to achieve in plain English, and AI generates a visual workflow that bridges tokens, executes smart contracts, and automates multi-agent interactions across multiple blockchains.
 
+DEPLOYMENT LINK: https://linked22.vercel.app
+
 ## 🎯 Problem Statement
 
 Building and executing crosschain workflows is complex and inaccessible:
