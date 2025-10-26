@@ -497,7 +497,6 @@ function FlowPageContent() {
     }
   };
 
-  // Handle mouse move for panning and dragging
   const handleMouseMove = (e: ReactMouseEvent<HTMLDivElement>) => {
     if (isPanning) {
       setTransform(prev => ({
